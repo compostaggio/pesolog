@@ -1,0 +1,2893 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>PesoLog</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0f0f;
+  --surface: #181818;
+  --surface2: #222;
+  --surface3: #2a2a2a;
+  --border: #2e2e2e;
+  --accent: #e8ff47;
+  --accent2: #ff6b35;
+  --accent3: #47c9ff;
+  --text: #f0f0f0;
+  --text-dim: #888;
+  --text-muted: #4a4a4a;
+  --success: #47ff8a;
+  --r: 12px;
+  --rs: 8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow-x:hidden;}
+body{font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:90px;}
+
+.hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+.hdr-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:19px;letter-spacing:-1px;}
+.hdr-logo span{color:var(--accent);}
+.hdr-right{display:flex;align-items:center;gap:10px;}
+.hdr-date{font-size:10px;color:var(--text-dim);}
+.settings-btn{background:none;border:1px solid var(--border);border-radius:8px;color:var(--text-dim);width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.2s;}
+.settings-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+.nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:50;}
+.nb{flex:1;padding:12px 4px;background:none;border:none;color:var(--text-muted);font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;transition:.2s;}
+.nb svg{width:20px;height:20px;}
+.nb.active{color:var(--accent);}
+
+.page{display:none;padding:16px;}
+.page.active{display:block;}
+
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;align-items:flex-end;justify-content:center;}
+.overlay.open{display:flex;}
+.overlay-panel{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-height:90vh;overflow-y:auto;padding:20px;padding-bottom:36px;}
+.overlay-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 18px;}
+.overlay-title{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;margin-bottom:18px;}
+
+.pin-dots{display:flex;gap:12px;justify-content:center;margin:20px 0;}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border);transition:.2s;}
+.pin-dot.filled{background:var(--accent);border-color:var(--accent);}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px;}
+.pin-key{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;font-family:'Syne',sans-serif;font-weight:700;font-size:20px;cursor:pointer;transition:.15s;text-align:center;}
+.pin-key:active{background:var(--surface3);transform:scale(.95);}
+.pin-key.del{font-size:13px;color:var(--accent2);}
+.pin-error{color:var(--accent2);font-size:12px;text-align:center;margin-top:8px;min-height:18px;}
+
+.slabel{font-size:10px;letter-spacing:2px;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:14px;}
+.card-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--accent);margin-bottom:14px;}
+
+label{display:block;font-size:11px;color:var(--text-dim);margin-bottom:5px;}
+input,select,textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:11px 13px;color:var(--text);font-family:'DM Mono',monospace;font-size:14px;outline:none;transition:border-color .2s;margin-bottom:12px;-webkit-appearance:none;}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+select option{background:var(--surface2);}
+textarea{resize:vertical;min-height:72px;margin-bottom:0;}
+
+.activity-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+.chip{background:var(--surface2);border:1px solid var(--border);border-radius:100px;padding:7px 14px;font-size:12px;cursor:pointer;transition:.2s;white-space:nowrap;user-select:none;}
+.chip.active{background:var(--accent);border-color:var(--accent);color:#0f0f0f;font-weight:500;}
+
+.mat-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;animation:fadeIn .2s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-5px);}to{opacity:1;transform:translateY(0);}}
+.mat-row input{margin-bottom:0;}
+.mat-row .mn{flex:1;}
+.mat-row .mp{width:96px;flex-shrink:0;}
+.rm-btn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--accent2);width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:14px;transition:.2s;}
+.add-btn{width:100%;background:none;border:1px dashed var(--border);border-radius:var(--rs);color:var(--text-dim);padding:10px;font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.add-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+.submit-btn{width:100%;background:var(--accent);color:#0f0f0f;border:none;border-radius:var(--r);padding:15px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer;transition:.2s;margin-top:6px;}
+.submit-btn:active{transform:scale(.98);}
+
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;}
+.stat-l{font-size:10px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
+.stat-v{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:var(--accent);}
+.stat-u{font-size:10px;color:var(--text-dim);margin-top:2px;}
+
+.ptabs{display:flex;gap:8px;margin-bottom:14px;}
+.ptab{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:8px;color:var(--text-dim);font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:.2s;text-align:center;}
+.ptab.active{background:var(--accent);border-color:var(--accent);color:#0f0f0f;font-weight:500;}
+
+.bk-item{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);}
+.bk-item:last-child{border-bottom:none;}
+.bk-name{font-size:12px;min-width:80px;}
+.bk-bar-w{flex:1;margin:0 10px;height:3px;background:var(--border);border-radius:2px;}
+.bk-bar{height:100%;background:var(--accent);border-radius:2px;transition:width .5s ease;}
+.bk-val{font-size:11px;color:var(--accent);min-width:72px;text-align:right;}
+
+.log-entry{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;}
+.log-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+.log-date{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;}
+.log-sub{font-size:11px;color:var(--text-dim);margin-top:2px;}
+.log-total{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:var(--accent);}
+.log-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+.tag{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:3px 7px;font-size:10px;color:var(--text-dim);}
+.tag span{color:var(--text);}
+.tag.truck{border-color:#ff6b3540;color:var(--accent2);}
+.tag.box{border-color:#47c9ff40;color:var(--accent3);}
+.log-note{font-size:11px;color:var(--text-dim);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-style:italic;}
+
+.settings-section{margin-bottom:20px;}
+.settings-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;margin-bottom:10px;color:var(--accent);}
+.settings-list{display:flex;flex-direction:column;gap:8px;}
+.settings-item{display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:10px 12px;}
+.settings-item-name{font-size:13px;}
+.settings-del{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:2px 8px;transition:.2s;}
+.settings-del:hover{color:var(--accent2);}
+.settings-add{display:flex;gap:8px;margin-top:8px;}
+.settings-add input{margin-bottom:0;flex:1;}
+.settings-add-btn{background:var(--accent);border:none;border-radius:var(--rs);padding:0 14px;color:#0f0f0f;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;flex-shrink:0;height:44px;}
+
+.toast{position:fixed;top:70px;left:50%;transform:translateX(-50%) translateY(-10px);background:var(--success);color:#0f0f0f;padding:10px 22px;border-radius:100px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;opacity:0;transition:all .3s;z-index:999;white-space:nowrap;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+.empty{text-align:center;padding:48px 20px;color:var(--text-muted);}
+.dropdown-menu{display:none;flex-direction:column;gap:6px;margin-top:8px;animation:fadeIn .2s ease;}
+.dropdown-menu.open{display:flex;}
+.dropdown-toggle{width:100%;background:none;border:1px solid var(--border);border-radius:var(--rs);padding:10px 14px;color:var(--text-dim);font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;transition:.2s;}
+.dropdown-toggle:hover{border-color:var(--accent);color:var(--accent);}
+.dropdown-toggle .arrow{transition:transform .2s;}
+.dropdown-toggle.open .arrow{transform:rotate(180deg);}
+@media print{
+  body{background:#fff!important;color:#000!important;padding:0!important;}
+  .nav,.hdr,.overlay,.page{display:none!important;}
+  #printArea{display:block!important;font-family:Arial,sans-serif;padding:20px;}
+}
+#printArea{display:none;}
+.log-actions{display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+.log-act-btn{flex:1;background:none;border:1px solid var(--border);border-radius:var(--rs);padding:8px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.log-act-btn.edit{color:var(--accent3);border-color:#47c9ff30;}
+.log-act-btn.edit:hover{background:#081a1f;}
+.log-act-btn.del{color:var(--accent2);border-color:#ff6b3530;}
+.log-act-btn.del:hover{background:#1a0f08;}
+.empty .ico{font-size:36px;margin-bottom:10px;}
+.empty p{font-size:12px;line-height:1.7;}
+
+.export-btn{width:100%;background:none;border:1px solid var(--accent2);border-radius:var(--r);padding:11px;font-family:'DM Mono',monospace;font-size:12px;color:var(--accent2);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px;transition:.2s;}
+.export-btn:hover{background:#1a0f08;}
+.gdrive-btn{width:100%;background:none;border:1px solid var(--accent3);border-radius:var(--r);padding:11px;font-family:'DM Mono',monospace;font-size:12px;color:var(--accent3);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;transition:.2s;}
+.gdrive-btn:hover{background:#081a1f;}
+.gdrive-btn:disabled{opacity:.4;cursor:not-allowed;}
+.gdrive-btn.loading{animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+.client-id-hint{font-size:10px;color:var(--text-muted);text-align:center;margin-top:6px;line-height:1.5;}
+
+.op-badge{display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:100px;padding:5px 12px;font-size:11px;margin-bottom:14px;}
+.op-dot{width:7px;height:7px;border-radius:50%;background:var(--success);}
+
+.sect-divider{height:1px;background:var(--border);margin:14px 0;}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-logo">PESO<span>LOG</span></div>
+  <div class="hdr-right">
+    <div class="hdr-date" id="hdrDate"></div>
+    <button class="settings-btn" onclick="openPin()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </div>
+</div>
+
+<div id="toastEl" class="toast"></div>
+
+<!-- PIN OVERLAY -->
+<div class="overlay" id="pinOverlay">
+  <div class="overlay-panel">
+    <div class="overlay-handle"></div>
+    <div class="overlay-title">🔒 Accesso Impostazioni</div>
+    <div class="pin-dots" id="pinDots">
+      <div class="pin-dot" id="pd0"></div><div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div><div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-error" id="pinError"></div>
+    <div class="pin-pad">
+      <button class="pin-key" onclick="pinPress('1')">1</button>
+      <button class="pin-key" onclick="pinPress('2')">2</button>
+      <button class="pin-key" onclick="pinPress('3')">3</button>
+      <button class="pin-key" onclick="pinPress('4')">4</button>
+      <button class="pin-key" onclick="pinPress('5')">5</button>
+      <button class="pin-key" onclick="pinPress('6')">6</button>
+      <button class="pin-key" onclick="pinPress('7')">7</button>
+      <button class="pin-key" onclick="pinPress('8')">8</button>
+      <button class="pin-key" onclick="pinPress('9')">9</button>
+      <button class="pin-key" onclick="closeOverlay('pinOverlay')">✕</button>
+      <button class="pin-key" onclick="pinPress('0')">0</button>
+      <button class="pin-key del" onclick="pinDel()">⌫ DEL</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS OVERLAY -->
+<div class="overlay" id="settingsOverlay">
+  <div class="overlay-panel">
+    <div class="overlay-handle"></div>
+    <div class="overlay-title">⚙️ Impostazioni</div>
+
+    <div class="settings-section">
+      <div class="settings-title">Operatori</div>
+      <div class="settings-list" id="settingsOperatori"></div>
+      <div class="settings-add">
+        <input type="text" id="newOperatore" placeholder="Nome operatore">
+        <button class="settings-add-btn" onclick="addSetting('operatori','newOperatore','Operatori')">+</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">Tipi di materiale</div>
+      <div class="settings-list" id="settingsMateriali"></div>
+      <div class="settings-add">
+        <input type="text" id="newMateriale" placeholder="Es. Acciaio">
+        <button class="settings-add-btn" onclick="addSetting('materiali','newMateriale','Materiali')">+</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">Box ammendante</div>
+      <div class="settings-list" id="settingsBox"></div>
+      <div class="settings-add">
+        <input type="text" id="newBox" placeholder="Es. Box A">
+        <button class="settings-add-btn" onclick="addSetting('box','newBox','Box')">+</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">Luoghi (Da / A)</div>
+      <div class="settings-list" id="settingsLuoghi"></div>
+      <div class="settings-add">
+        <input type="text" id="newLuogo" placeholder="Es. Magazzino">
+        <button class="settings-add-btn" onclick="addSetting('luoghi','newLuogo','Luoghi')">+</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">Destinatari email settimanale</div>
+      <div style="font-size:11px;color:var(--text-dim);line-height:1.7;margin-bottom:10px;">
+        Inserisci uno o più indirizzi email separati da virgola. Riceveranno il riepilogo settimanale ogni martedì mattina.
+      </div>
+      <div class="settings-list" id="settingsEmail"></div>
+      <div class="settings-add">
+        <input type="email" id="newEmail" placeholder="es. nome@azienda.it">
+        <button class="settings-add-btn" onclick="addEmail()">+</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">Cambia PIN</div>
+      <div style="display:flex;gap:8px;">
+        <input type="password" id="newPin" placeholder="Nuovo PIN (4 cifre)" maxlength="4" style="margin-bottom:0;">
+        <button class="settings-add-btn" onclick="changePin()">Salva</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">Nome dispositivo</div>
+      <div style="font-size:11px;color:var(--text-dim);line-height:1.7;margin-bottom:10px;">
+        Imposta un nome diverso su ogni dispositivo (es. <strong>pc</strong> sul PC, <strong>tablet</strong> sul tablet). Il file su Drive verrà salvato come <strong>pesolog_dati_[nome].json</strong>.
+      </div>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="dispositvoInput" placeholder="es. pc oppure tablet" style="margin-bottom:0;">
+        <button class="settings-add-btn" onclick="saveDispositivo()">Salva</button>
+      </div>
+      <div id="dispositivoStatus" style="font-size:11px;color:var(--text-muted);margin-top:6px;"></div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">Google Drive — Script URL</div>
+      <div style="font-size:11px;color:var(--text-dim);line-height:1.7;margin-bottom:10px;">
+        Inserisci l'URL del tuo Google Apps Script. I dati vengono salvati automaticamente ad ogni report in un file unico <strong>pesolog_dati.json</strong> nella cartella PesoLog.
+      </div>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/..." style="margin-bottom:0;font-size:11px;">
+        <button class="settings-add-btn" onclick="saveScriptUrl()">Salva</button>
+      </div>
+      <div id="clientIdStatus" style="font-size:11px;color:var(--text-muted);margin-top:6px;"></div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">Esporta file configurato</div>
+      <div style="font-size:11px;color:var(--text-dim);line-height:1.7;margin-bottom:10px;">
+        Scarica una copia del file con operatori, materiali, box e PIN già salvati dentro. Condividila con i colleghi: la apriranno già pronta all'uso.
+      </div>
+      <button class="export-btn" style="margin-top:0;" onclick="exportConfiguredFile()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Scarica file configurato (.html)
+      </button>
+    </div>
+
+    <button class="submit-btn" onclick="closeOverlay('settingsOverlay')">Chiudi</button>
+  </div>
+</div>
+
+<!-- PAGE: INSERIMENTO -->
+<div id="page-inserimento" class="page active">
+  <div class="op-badge"><div class="op-dot"></div><span id="badgeOp">— seleziona operatore —</span></div>
+  <div class="slabel">Nuovo Report</div>
+
+  <div class="card">
+    <div class="card-title">Dati generali</div>
+    <label>Data</label>
+    <input type="date" id="dataInput">
+    <label>Operatore</label>
+    <select id="operatoreInput" onchange="document.getElementById('badgeOp').textContent=this.value||'— seleziona operatore —'">
+      <option value="">Seleziona...</option>
+    </select>
+    <label>Turno</label>
+    <select id="turnoInput">
+      <option>Mattina</option><option>Pomeriggio</option><option>Notte</option>
+    </select>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Attività del giorno</div>
+    <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Seleziona una o più attività svolte:</div>
+    <div class="activity-chips" id="activityChips">
+      <div class="chip active" data-type="materiali" onclick="toggleChip(this)">📦 Materiali</div>
+      <div class="chip" data-type="camion" onclick="toggleChip(this)">🚛 Carico camion</div>
+      <div class="chip" data-type="ammendante" onclick="toggleChip(this)">🌱 Ammendante</div>
+    </div>
+
+    <!-- MATERIALI -->
+    <div id="sect-materiali">
+      <div class="sect-divider" style="margin-top:0;"></div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">📦 Materiale · kg · Da → A</div>
+      <div id="materialList"></div>
+      <button class="add-btn" onclick="addMaterial()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Aggiungi materiale
+      </button>
+    </div>
+
+    <!-- CAMION -->
+    <div id="sect-camion" style="display:none;">
+      <div class="sect-divider"></div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">🚛 Tipo carico / kg / n° camion</div>
+      <div id="camionList"></div>
+      <button class="add-btn" onclick="addCamionRow()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Aggiungi carico
+      </button>
+    </div>
+
+    <!-- AMMENDANTE -->
+    <div id="sect-ammendante" style="display:none;">
+      <div class="sect-divider"></div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">🌱 Produzione ammendante</div>
+      <label>Da (provenienza)</label>
+      <input type="text" id="ammDaInput" placeholder="Es. Area A" list="dl_luoghi">
+      <label>Box di scarico</label>
+      <select id="boxInput">
+        <option value="">Seleziona box...</option>
+      </select>
+      <label>Quantità prodotta (kg)</label>
+      <input type="number" id="ammQtaInput" min="0" placeholder="es. 5000" style="margin-bottom:0;">
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Note</div>
+    <textarea id="noteInput" placeholder="Note, anomalie, osservazioni..."></textarea>
+  </div>
+
+  <button class="submit-btn" onclick="salvaReport()">SALVA REPORT</button>
+</div>
+
+<!-- PAGE: RIEPILOGO -->
+<div id="page-riepilogo" class="page">
+  <div class="slabel">Dashboard</div>
+  <div class="card" style="margin-bottom:14px;">
+    <div class="card-title">Periodo</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+      <div>
+        <label>Da</label>
+        <input type="date" id="filterDa" onchange="renderRiepilogo()" style="margin-bottom:0;">
+      </div>
+      <div>
+        <label>A</label>
+        <input type="date" id="filterA" onchange="renderRiepilogo()" style="margin-bottom:0;">
+      </div>
+    </div>
+    <div class="ptabs" style="margin-bottom:0;">
+      <button class="ptab" onclick="setQuick('oggi',this)">Oggi</button>
+      <button class="ptab" onclick="setQuick('settimana',this)">Sett.</button>
+      <button class="ptab active" onclick="setQuick('mese',this)">Mese</button>
+      <button class="ptab" onclick="setQuick('tutto',this)">Tutto</button>
+    </div>
+  </div>
+  <div class="stats-grid">
+    <div class="stat"><div class="stat-l">Peso totale</div><div class="stat-v" id="stTotale">0</div><div class="stat-u">kg movimentati</div></div>
+    <div class="stat"><div class="stat-l">Report</div><div class="stat-v" id="stReport">0</div><div class="stat-u">inseriti</div></div>
+    <div class="stat"><div class="stat-l">Camion</div><div class="stat-v" id="stCamion">0</div><div class="stat-u">caricati</div></div>
+    <div class="stat"><div class="stat-l">Ammendante</div><div class="stat-v" id="stAmm">0</div><div class="stat-u">kg prodotti</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Per tipo di materiale</div>
+    <div id="breakdownList"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">🚛 Per tipo di carico camion</div>
+    <div id="breakdownCamion"></div>
+  </div>
+  <div class="card" style="margin-top:14px;">
+    <div class="card-title">Esporta dati</div>
+
+    <!-- Salva su Drive — sempre visibile -->
+    <button class="gdrive-btn" id="gdriveBtn" onclick="uploadToDrive()" style="margin-top:0;">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+      Salva su Google Drive
+    </button>
+
+    <!-- Menu a tendina altre opzioni -->
+    <button class="dropdown-toggle" id="exportToggle" onclick="toggleExportMenu()" style="margin-top:10px;">
+      <span style="display:flex;align-items:center;gap:8px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+        Altre opzioni
+      </span>
+      <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+
+    <div class="dropdown-menu" id="exportMenu">
+      <button class="export-btn" onclick="exportCSV()" style="margin-top:0;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Scarica CSV
+      </button>
+      <button class="gdrive-btn" onclick="stampaPDF()" style="border-color:#888;color:#aaa;margin-top:0;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Stampa riepilogo PDF
+      </button>
+      <button class="gdrive-btn" onclick="stampaDigestori()" style="border-color:#b47fff;color:#b47fff;margin-top:0;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Stampa report digestori PDF
+      </button>
+      <button class="gdrive-btn" onclick="ripristinaDaDrive()" style="border-color:#47ff8a40;color:var(--success);margin-top:0;">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        Ripristina da file Drive
+      </button>
+      <button class="gdrive-btn" onclick="unisciDaAltroDispositivo()" style="border-color:#e8ff4740;color:var(--accent);margin-top:0;">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Unisci dati da altro dispositivo
+      </button>
+      <button class="gdrive-btn" onclick="ripristinaConferimenti()" style="border-color:#47c9ff40;color:var(--accent3);margin-top:0;">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        Ripristina conferimenti
+      </button>
+    </div>
+
+    <div class="client-id-hint" id="driveHint" style="margin-top:8px;"></div>
+  </div>
+</div>
+
+<!-- PRINT AREA (hidden, shown only on print) -->
+<div id="printArea"></div>
+
+<!-- PAGE: STORICO -->
+<div id="page-storico" class="page">
+  <div class="slabel">Storico report</div>
+  <div id="storicoList"></div>
+</div>
+
+<!-- PAGE: GRAFICI -->
+<div id="page-grafici" class="page">
+  <div class="slabel">Grafici</div>
+
+  <div class="card">
+    <div class="card-title">Periodo di riferimento</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div><label>Da</label><input type="date" id="grafDa" onchange="renderGrafici()" style="margin-bottom:0;"></div>
+      <div><label>A</label><input type="date" id="grafA" onchange="renderGrafici()" style="margin-bottom:0;"></div>
+    </div>
+    <div class="ptabs" style="margin-top:10px;margin-bottom:0;">
+      <button class="ptab" onclick="setGrafPeriod('mese',this)">Mese</button>
+      <button class="ptab active" onclick="setGrafPeriod('3mesi',this)">3 Mesi</button>
+      <button class="ptab" onclick="setGrafPeriod('anno',this)">Anno</button>
+      <button class="ptab" onclick="setGrafPeriod('tutto',this)">Tutto</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📈 Andamento pesi settimanali</div>
+    <canvas id="chartPesi" height="200"></canvas>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📊 Materiali per settimana (top 5)</div>
+    <canvas id="chartMensile" height="220"></canvas>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🌱 Produzione ammendante settimanale</div>
+    <canvas id="chartAmm" height="180"></canvas>
+  </div>
+</div>
+
+<!-- PAGE: DEPOSITI -->
+<div id="page-depositi" class="page">
+  <div class="slabel">Depositi & Previsioni</div>
+
+  <!-- Data inizio calcolo -->
+  <div class="card">
+    <div class="card-title">📅 Periodo di calcolo</div>
+    <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">Data di inizio da cui calcolare i depositi</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div><label>Da data</label><input type="date" id="depDa" onchange="renderDepositi()" style="margin-bottom:0;"></div>
+      <div><label>A data</label><input type="date" id="depA" onchange="renderDepositi()" style="margin-bottom:0;"></div>
+    </div>
+  </div>
+
+  <!-- Deposito iniziale -->
+  <div class="card">
+    <div class="card-title">📌 Deposito iniziale (punto di partenza)</div>
+    <div style="font-size:11px;color:var(--text-dim);line-height:1.7;margin-bottom:12px;">
+      Inserisci la quantità già a deposito in una data precisa. L'app userà questo come punto di partenza per i calcoli.
+    </div>
+    <div id="depInizialeList"></div>
+    <button class="add-btn" onclick="openDepIniziale()" style="margin-top:8px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Aggiungi / modifica deposito iniziale
+    </button>
+  </div>
+
+  <!-- Organico conferito -->
+  <div class="card">
+    <div class="card-title">🚚 Organico conferito</div>
+    <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Inserisci il dato esterno settimanale o mensile</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 80px;gap:8px;margin-bottom:8px;">
+      <div><label>Dal</label><input type="date" id="confDal" style="margin-bottom:0;"></div>
+      <div><label>Al</label><input type="date" id="confAl" style="margin-bottom:0;"></div>
+      <div><label>Quantità (kg)</label><input type="number" id="confQta" placeholder="es. 500000" min="0" style="margin-bottom:0;"></div>
+      <div style="display:flex;align-items:flex-end;">
+        <button class="settings-add-btn" onclick="addConferimento()" style="width:100%;height:44px;">+</button>
+      </div>
+    </div>
+    <div id="confList" style="margin-top:8px;"></div>
+    <div style="font-size:12px;color:var(--text-dim);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
+      Totale conferito nel periodo: <span id="confTotale" style="color:var(--accent);font-weight:600;">0 t</span>
+    </div>
+  </div>
+
+  <!-- Depositi correnti -->
+  <div class="card">
+    <div class="card-title">📦 Depositi correnti</div>
+    <div id="depositiList"></div>
+  </div>
+
+  <!-- Previsione smaltimento -->
+  <div class="card">
+    <div class="card-title">🔮 Previsione smaltimento</div>
+    <div style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Due periodi separati: uno per il lavorato, uno per il conferito</div>
+    <div style="margin-bottom:12px;">
+      <label>Materiale</label>
+      <select id="prevMateriale" onchange="renderPrevisione();renderObiettivoSuggestion();renderSimulatore();" style="margin-bottom:0;">
+        <option value="sovvallo">Sovvallo</option>
+        <option value="inoculo">Inoculo</option>
+        <option value="organico">Organico</option>
+      </select>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:12px;margin-bottom:10px;">
+      <div style="font-size:11px;color:var(--accent3);margin-bottom:8px;font-weight:500;">📦 Periodo materiale lavorato</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div><label>Dal</label><input type="date" id="prevLavDal" onchange="renderPrevisione()" style="margin-bottom:0;"></div>
+        <div><label>Al</label><input type="date" id="prevLavAl" onchange="renderPrevisione()" style="margin-bottom:0;"></div>
+      </div>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:12px;margin-bottom:12px;">
+      <div style="font-size:11px;color:#ffb347;margin-bottom:8px;font-weight:500;">🚚 Periodo conferimento (solo organico)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div><label>Dal</label><input type="date" id="prevConfDal" onchange="renderPrevisione()" style="margin-bottom:0;"></div>
+        <div><label>Al</label><input type="date" id="prevConfAl" onchange="renderPrevisione()" style="margin-bottom:0;"></div>
+      </div>
+    </div>
+    <div id="previsioneResult"></div>
+
+    <!-- Obiettivo data -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:12px;margin-top:10px;">
+      <div style="font-size:11px;color:var(--accent);margin-bottom:8px;font-weight:500;">🎯 Obiettivo: voglio liberare entro il</div>
+      <input type="date" id="prevObiettivoData" onchange="renderObiettivoSuggestion()" style="margin-bottom:0;">
+    </div>
+    <div id="obiettivoResult" style="margin-top:10px;"></div>
+  </div>
+
+  <!-- Simulatore "e se?" -->
+  <div class="card" style="margin-top:14px;">
+    <div class="card-title">🧮 Simulatore — E se?</div>
+    <div style="font-size:11px;color:var(--text-dim);line-height:1.7;margin-bottom:12px;">
+      Modifica ingresso o uscita ipotetica e vedi come cambia la previsione, mantenendo invariati gli altri parametri.
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+      <div>
+        <label>Ingresso ipotetico (t/sett)</label>
+        <input type="number" id="simIngresso" placeholder="es. 1000" min="0" step="0.1" oninput="renderSimulatore()" style="margin-bottom:0;">
+      </div>
+      <div>
+        <label>Uscita ipotetica (t/sett)</label>
+        <input type="number" id="simUscita" placeholder="es. 864" min="0" step="0.1" oninput="renderSimulatore()" style="margin-bottom:0;">
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;">
+      Lascia vuoto per usare il valore reale calcolato dai dati.
+    </div>
+    <div id="simulatoreResult"></div>
+  </div>
+
+  <!-- Pulsante stampa previsione -->
+  <button class="gdrive-btn" onclick="stampaPrevisione()" style="border-color:#888;color:#aaa;margin-top:6px;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+    Stampa report previsione PDF
+  </button>
+</div>
+
+<!-- DEP INIZIALE OVERLAY -->
+<div class="overlay" id="depInizialeOverlay">
+  <div class="overlay-panel">
+    <div class="overlay-handle"></div>
+    <div class="overlay-title">📌 Deposito iniziale</div>
+    <div style="font-size:11px;color:var(--text-dim);line-height:1.7;margin-bottom:16px;">
+      Inserisci per ogni materiale la quantità a deposito in una data precisa. Lascia vuoto se non hai dati.
+    </div>
+    <label>Data di riferimento</label>
+    <input type="date" id="diData">
+
+    <div class="card-title" style="margin-top:8px;">Sovvallo</div>
+    <input type="number" id="diSovvallo" placeholder="kg (lascia vuoto se non disponibile)" min="0">
+
+    <div class="card-title">Inoculo</div>
+    <input type="number" id="diInoculo" placeholder="kg (lascia vuoto se non disponibile)" min="0">
+
+    <div class="card-title">Organico</div>
+    <input type="number" id="diOrganico" placeholder="kg (lascia vuoto se non disponibile)" min="0">
+
+    <button class="submit-btn" onclick="saveDepIniziale()" style="margin-top:8px;margin-bottom:10px;">SALVA</button>
+    <button class="export-btn" onclick="closeOverlay('depInizialeOverlay')">Annulla</button>
+  </div>
+</div>
+
+<!-- EDIT OVERLAY -->
+<div class="overlay" id="editOverlay">
+  <div class="overlay-panel" id="editPanel">
+    <div class="overlay-handle"></div>
+    <div class="overlay-title">✏️ Modifica Report</div>
+    <div class="card">
+      <div class="card-title">Dati generali</div>
+      <label>Data</label>
+      <input type="date" id="editData">
+      <label>Operatore</label>
+      <select id="editOperatore"></select>
+      <label>Turno</label>
+      <select id="editTurno">
+        <option>Mattina</option><option>Pomeriggio</option><option>Notte</option>
+      </select>
+    </div>
+    <div class="card">
+      <div class="card-title">Materiali</div>
+      <div id="editMaterialList"></div>
+      <button class="add-btn" onclick="addEditMaterial()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Aggiungi materiale
+      </button>
+    </div>
+    <div class="card">
+      <div class="card-title">🚛 Carico camion</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">Tipo carico / kg / n° camion</div>
+      <div id="editCamionList"></div>
+      <button class="add-btn" onclick="addEditCamionRow()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Aggiungi carico
+      </button>
+    </div>
+    <div class="card">
+      <div class="card-title">🌱 Ammendante</div>
+      <label>Da (provenienza)</label>
+      <input type="text" id="editAmmDa" placeholder="Es. Area A" list="dl_luoghi">
+      <label>Box di scarico</label>
+      <select id="editBoxInput"><option value="">Seleziona box...</option></select>
+      <label>Quantità prodotta (kg)</label>
+      <input type="number" id="editAmmQta" min="0" placeholder="es. 5000" style="margin-bottom:0;">
+    </div>
+    <div class="card">
+      <div class="card-title">Note</div>
+      <textarea id="editNote" placeholder="Note..."></textarea>
+    </div>
+    <button class="submit-btn" onclick="saveEdit()" style="margin-bottom:10px;">SALVA MODIFICHE</button>
+    <button class="export-btn" onclick="closeOverlay('editOverlay')">Annulla</button>
+  </div>
+</div>
+
+<nav class="nav">
+  <button class="nb active" onclick="showPage('inserimento',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+    Inserisci
+  </button>
+  <button class="nb" onclick="showPage('riepilogo',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    Riepilogo
+  </button>
+  <button class="nb" onclick="showPage('storico',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    Storico
+  </button>
+  <button class="nb" onclick="showPage('grafici',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 19 9 5 6 12 2 12"/></svg>
+    Grafici
+  </button>
+  <button class="nb" onclick="showPage('depositi',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Depositi
+  </button>
+</nav>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────
+let reports = JSON.parse(localStorage.getItem('pl_reports') || '[]');
+let conferimenti = JSON.parse(localStorage.getItem('pl_conferimenti') || '[]');
+function saveConferimenti(){ localStorage.setItem('pl_conferimenti', JSON.stringify(conferimenti)); }
+let depIniziale = JSON.parse(localStorage.getItem('pl_dep_iniziale') || 'null') || { data:'', sovvallo:0, inoculo:0, organico:0 };
+function saveDepIniziale_(){ localStorage.setItem('pl_dep_iniziale', JSON.stringify(depIniziale)); }
+let settings = JSON.parse(localStorage.getItem('pl_settings') || 'null') || {
+  operatori: ['Mario Rossi','Luigi Bianchi','Anna Verdi','Marco Esposito'],
+  materiali: ['Acciaio','Alluminio','Rame','Ghisa','Plastica','Cartone','Legno'],
+  box: ['Box A','Box B','Box C','Box D'],
+  luoghi: ['Magazzino','Area A','Area B','Capannone','Esterno','Banchina'],
+  emails: [],
+  dispositivo: 'pc',
+  pin: '1234'
+};
+function saveData(){ localStorage.setItem('pl_reports', JSON.stringify(reports)); }
+function saveSettings(){ localStorage.setItem('pl_settings', JSON.stringify(settings)); }
+
+// Migrazione: aggiunge chiavi mancanti se settings salvato è vecchio
+if(!settings.luoghi){ settings.luoghi = ['Magazzino','Area A','Area B','Capannone','Esterno','Banchina']; saveSettings(); }
+if(!settings.emails){ settings.emails = []; saveSettings(); }
+if(!settings.dispositivo){ settings.dispositivo = 'pc'; saveSettings(); }
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const d = new Date();
+  document.getElementById('hdrDate').textContent =
+    d.toLocaleDateString('it-IT',{weekday:'short',day:'numeric',month:'short'}).toUpperCase();
+  document.getElementById('dataInput').value = d.toISOString().split('T')[0];
+  populateSelects();
+  addMaterial();
+  // Default: mese corrente
+  const _now = new Date();
+  const _firstDay = _now.toISOString().slice(0,7) + '-01';
+  const _lastDay = new Date(_now.getFullYear(), _now.getMonth()+1, 0).toISOString().split('T')[0];
+  document.getElementById('filterDa').value = _firstDay;
+  document.getElementById('filterA').value = _lastDay;
+  renderRiepilogo();
+  renderStorico();
+  // Default depositi: inizio anno corrente
+  const _depStart = new Date().getFullYear() + '-01-01';
+  const _depEnd = new Date().toISOString().split('T')[0];
+  if(document.getElementById('depDa')) document.getElementById('depDa').value = _depStart;
+  if(document.getElementById('depA')) document.getElementById('depA').value = _depEnd;
+  // Default conferimento: settimana corrente (lun-dom)
+  const _now2 = new Date();
+  const _mon = new Date(_now2); _mon.setDate(_now2.getDate()-(_now2.getDay()+6)%7);
+  const _sun = new Date(_mon); _sun.setDate(_mon.getDate()+6);
+  if(document.getElementById('confDal')) document.getElementById('confDal').value = _mon.toISOString().split('T')[0];
+  if(document.getElementById('confAl'))  document.getElementById('confAl').value  = _sun.toISOString().split('T')[0];
+
+  // Default previsione: ultime 8 settimane per lavorato, ultimi 2 mesi per conferito
+  const _prevNow = new Date();
+  const _prev8w = new Date(_prevNow); _prev8w.setDate(_prevNow.getDate()-56);
+  const _prev2m = new Date(_prevNow); _prev2m.setMonth(_prevNow.getMonth()-2);
+  if(document.getElementById('prevLavDal'))  document.getElementById('prevLavDal').value  = _prev8w.toISOString().split('T')[0];
+  if(document.getElementById('prevLavAl'))   document.getElementById('prevLavAl').value   = _prevNow.toISOString().split('T')[0];
+  if(document.getElementById('prevConfDal')) document.getElementById('prevConfDal').value = _prev2m.toISOString().split('T')[0];
+  if(document.getElementById('prevConfAl'))  document.getElementById('prevConfAl').value  = _prevNow.toISOString().split('T')[0];
+
+  // Default grafici: ultimi 3 mesi
+  const _g3 = new Date(); _g3.setMonth(_g3.getMonth()-3);
+  document.getElementById('grafDa').value = _g3.toISOString().split('T')[0];
+  document.getElementById('grafA').value = new Date().toISOString().split('T')[0];
+});
+
+function populateSelects(){
+  const op = document.getElementById('operatoreInput');
+  const cur = op.value;
+  op.innerHTML = '<option value="">Seleziona...</option>';
+  settings.operatori.forEach(o => { const e=document.createElement('option'); e.value=e.textContent=o; op.appendChild(e); });
+  if(cur) op.value = cur;
+
+  const bx = document.getElementById('boxInput');
+  const curB = bx.value;
+  bx.innerHTML = '<option value="">Seleziona box...</option>';
+  settings.box.forEach(b => { const e=document.createElement('option'); e.value=e.textContent=b; bx.appendChild(e); });
+  if(curB) bx.value = curB;
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────
+function showPage(name, btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='riepilogo') renderRiepilogo();
+  if(name==='storico') renderStorico();
+  if(name==='grafici') renderGrafici();
+  if(name==='depositi') renderDepositi();
+}
+
+// ── CHIPS ─────────────────────────────────────────────────────────────────
+const activeSects = new Set(['materiali']);
+function toggleChip(chip){
+  const t = chip.dataset.type;
+  if(activeSects.has(t)){
+    if(activeSects.size===1) return;
+    activeSects.delete(t); chip.classList.remove('active');
+  } else {
+    activeSects.add(t); chip.classList.add('active');
+  }
+  document.getElementById('sect-materiali').style.display = activeSects.has('materiali') ? '' : 'none';
+  document.getElementById('sect-camion').style.display    = activeSects.has('camion')    ? '' : 'none';
+  document.getElementById('sect-ammendante').style.display= activeSects.has('ammendante')? '' : 'none';
+}
+
+// ── MATERIAL ROWS ─────────────────────────────────────────────────────────
+let matCnt = 0;
+function addMaterial(){
+  matCnt++;
+  const id = 'mr'+matCnt;
+  if(!document.getElementById('dl_mat')){
+    const dl=document.createElement('datalist'); dl.id='dl_mat';
+    settings.materiali.forEach(m=>{ const o=document.createElement('option'); o.value=m; dl.appendChild(o); });
+    document.body.appendChild(dl);
+  }
+  if(!document.getElementById('dl_luoghi')){
+    const dl=document.createElement('datalist'); dl.id='dl_luoghi';
+    settings.luoghi.forEach(l=>{ const o=document.createElement('option'); o.value=l; dl.appendChild(o); });
+    document.body.appendChild(dl);
+  }
+  const div=document.createElement('div');
+  div.className='mat-row'; div.id=id;
+  div.style.cssText='display:grid;grid-template-columns:2fr 1fr 1fr 1fr 34px;gap:6px;align-items:center;margin-bottom:8px;';
+  div.innerHTML=`
+    <input type="text" class="mn" placeholder="Materiale" list="dl_mat" style="margin-bottom:0;">
+    <input type="number" class="mp" placeholder="kg" min="0" step="0.1" style="margin-bottom:0;">
+    <input type="text" class="mda" placeholder="Da" list="dl_luoghi" style="margin-bottom:0;">
+    <input type="text" class="ma" placeholder="A" list="dl_luoghi" style="margin-bottom:0;">
+    <button class="rm-btn" onclick="removeMat('${id}')">✕</button>`;
+  document.getElementById('materialList').appendChild(div);
+}
+function removeMat(id){
+  const el=document.getElementById(id);
+  if(el && document.querySelectorAll('.mat-row').length>1) el.remove();
+}
+
+// ── CAMION ROWS ───────────────────────────────────────────────────────────
+let camCnt = 0;
+function addCamionRow(){
+  camCnt++;
+  const id = 'cr'+camCnt;
+  const div=document.createElement('div');
+  div.className='mat-row'; div.id=id;
+  div.style.cssText='display:grid;grid-template-columns:2fr 1fr 1fr 34px;gap:6px;align-items:center;margin-bottom:8px;';
+  div.innerHTML=`<input type="text" class="cn" placeholder="Tipo carico" list="dl_mat" style="margin-bottom:0;"><input type="number" class="cp" placeholder="kg" min="0" step="0.1" style="margin-bottom:0;"><input type="number" class="cc" placeholder="n° cam" min="0" style="margin-bottom:0;text-align:center;"><button class="rm-btn" onclick="removeCamionRow('${id}')">✕</button>`;
+  document.getElementById('camionList').appendChild(div);
+}
+function removeCamionRow(id){
+  const el=document.getElementById(id);
+  if(el && document.querySelectorAll('#camionList .mat-row').length>1) el.remove();
+}
+
+// ── SAVE ──────────────────────────────────────────────────────────────────
+function salvaReport(){
+  const data=document.getElementById('dataInput').value;
+  const operatore=document.getElementById('operatoreInput').value;
+  const turno=document.getElementById('turnoInput').value;
+  const note=document.getElementById('noteInput').value.trim();
+  if(!data||!operatore){ showToast('⚠ Inserisci data e operatore','#ff6b35'); return; }
+
+  // Legge sempre tutti i campi, indipendentemente dai chip visibili
+  let materiali=[];
+  document.querySelectorAll('#materialList .mat-row').forEach(r=>{
+    const n=r.querySelector('.mn').value.trim();
+    const p=parseFloat(r.querySelector('.mp').value)||0;
+    const da=r.querySelector('.mda').value.trim();
+    const a=r.querySelector('.ma').value.trim();
+    if(n&&p>0) materiali.push({nome:n,peso:p,da,a});
+  });
+
+  let camion=null;
+  const carichiList=[];
+  document.querySelectorAll('#camionList .mat-row').forEach(r=>{
+    const n=r.querySelector('.cn').value.trim();
+    const p=parseFloat(r.querySelector('.cp').value)||0;
+    const c=parseInt(r.querySelector('.cc').value)||0;
+    if(n) carichiList.push({nome:n,peso:p,numCamion:c});
+  });
+  if(carichiList.length) camion={carichi:carichiList};
+
+  let ammendante=null;
+  const box=document.getElementById('boxInput').value;
+  const ammQta=parseFloat(document.getElementById('ammQtaInput').value)||0;
+  const ammDa=document.getElementById('ammDaInput').value.trim();
+  if(box) ammendante={box,qta:ammQta,da:ammDa};
+
+  if(materiali.length===0 && camion===null && ammendante===null){
+    showToast('⚠ Nessun dato da salvare','#ff6b35'); return;
+  }
+
+  const totCarichi=(camion?.carichi||[]).reduce((s,c)=>s+c.peso,0);
+  const totale=materiali.reduce((s,m)=>s+m.peso,0)+totCarichi+(ammendante?.qta||0);
+  reports.push({id:Date.now(),data,operatore,turno,materiali,camion,ammendante,totale,note,ts:new Date().toISOString()});
+  saveData();
+  syncToDrive(true);
+  showToast('✓ Report salvato!','var(--success)');
+  if(settings.emails.length) syncEmailConfig();
+  resetForm();
+}
+
+function resetForm(){
+  const today=new Date().toISOString().split('T')[0];
+  document.getElementById('dataInput').value=today;
+  document.getElementById('operatoreInput').value='';
+  document.getElementById('turnoInput').value='Mattina';
+  document.getElementById('noteInput').value='';
+  document.getElementById('camionList').innerHTML=''; camCnt=0;
+  document.getElementById('ammQtaInput').value='';
+  document.getElementById('ammDaInput').value='';
+  document.getElementById('boxInput').value='';
+  document.getElementById('materialList').innerHTML='';
+  document.getElementById('badgeOp').textContent='— seleziona operatore —';
+  activeSects.clear(); activeSects.add('materiali');
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  document.querySelector('[data-type="materiali"]').classList.add('active');
+  document.getElementById('sect-materiali').style.display='';
+  document.getElementById('sect-camion').style.display='none';
+  document.getElementById('sect-ammendante').style.display='none';
+  addMaterial();
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────
+function showToast(msg, color){
+  const t=document.getElementById('toastEl');
+  t.textContent=msg;
+  t.style.background=(color&&color!=='var(--success)')?color:'var(--success)';
+  t.style.color=(color&&color!=='var(--success)')? '#fff':'#0f0f0f';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+// ── RIEPILOGO ─────────────────────────────────────────────────────────────
+function setQuick(period, btn){
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  let da, a;
+  if(period==='oggi'){
+    da = today; a = today;
+  } else if(period==='settimana'){
+    const w = new Date(now); w.setDate(now.getDate()-6);
+    da = w.toISOString().split('T')[0]; a = today;
+  } else if(period==='mese'){
+    da = today.slice(0,7) + '-01';
+    const lastDay = new Date(now.getFullYear(), now.getMonth()+1, 0);
+    a = lastDay.toISOString().split('T')[0];
+  } else {
+    da = ''; a = '';
+  }
+  document.getElementById('filterDa').value = da;
+  document.getElementById('filterA').value = a;
+  document.querySelectorAll('.ptab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderRiepilogo();
+}
+
+function getFiltered(){
+  const da = document.getElementById('filterDa')?.value || '';
+  const a  = document.getElementById('filterA')?.value  || '';
+  return reports.filter(r=>{
+    if(da && r.data < da) return false;
+    if(a  && r.data > a)  return false;
+    return true;
+  });
+}
+function renderRiepilogo(){
+  const f=getFiltered();
+  const totPeso=f.reduce((s,r)=>s+r.totale,0);
+  const totCamion=f.reduce((s,r)=>s+(r.camion?.carichi||[]).reduce((a,c)=>a+(c.numCamion||0),0),0);
+  const totAmm=f.reduce((s,r)=>s+(r.ammendante?.qta||0),0);
+  document.getElementById('stTotale').textContent=fmtK(totPeso);
+  document.getElementById('stReport').textContent=f.length;
+  document.getElementById('stCamion').textContent=totCamion;
+  document.getElementById('stAmm').textContent=fmtK(totAmm);
+
+  // Materiali breakdown
+  const matMap={};
+  f.forEach(r=>(r.materiali||[]).forEach(m=>{
+    const nl = m.nome.toLowerCase();
+    const da = (m.da||'').trim();
+    const a  = (m.a||'').trim();
+    const daL = da.toLowerCase();
+    const aL  = a.toLowerCase();
+
+    if(nl.includes('sovvallo')){
+      const key = daL.includes('50x50') ? m.nome+' (In fossa)' : m.nome+' (prodotto)';
+      matMap[key]=(matMap[key]||0)+m.peso;
+
+    } else if(nl.includes('inoculo')){
+      // Inoculo riutilizzato: inserito a mano con campo A compilato
+      if(a) { const k=m.nome+' (riutilizzato)'; matMap[k]=(matMap[k]||0)+m.peso; }
+      // Inoculo prodotto calcolato dopo (Vagliatura - Sovvallo prodotto)
+
+    } else if(nl.includes('organico')){
+      // Organico: conta nel totale solo se Da è vuoto (esclude trasferimenti)
+      if(!da) matMap[m.nome]=(matMap[m.nome]||0)+m.peso;
+      // Sottovoci aggiuntive
+      if(aL.includes('dige'))                    { const k=m.nome+' → Digestore';    matMap[k]=(matMap[k]||0)+m.peso; }
+      if(aL.includes('biocella') && !da)         { const k=m.nome+' → Compostaggio'; matMap[k]=(matMap[k]||0)+m.peso; }
+
+    } else {
+      matMap[m.nome]=(matMap[m.nome]||0)+m.peso;
+    }
+  }));
+  // Inoculo (prodotto) = Vagliatura - Sovvallo (prodotto)
+  {
+    let totVagliatura = 0, totSovvalloProdotto = 0;
+    let nomeInoculo = 'Inoculo';
+    f.forEach(r=>(r.materiali||[]).forEach(m=>{
+      const nl = m.nome.toLowerCase();
+      if(nl.includes('vagliatura')) totVagliatura += (m.peso||0);
+      if(nl.includes('sovvallo') && !(m.da||'').toLowerCase().includes('50x50')) totSovvalloProdotto += (m.peso||0);
+      if(nl.includes('inoculo')) nomeInoculo = m.nome;
+    }));
+    const inoculoProdotto = Math.max(0, totVagliatura - totSovvalloProdotto);
+    if(inoculoProdotto > 0) matMap[nomeInoculo+' (prodotto)'] = inoculoProdotto;
+  }
+  const sorted=Object.entries(matMap).sort((a,b)=>b[1]-a[1]);
+  const maxV=sorted.length?sorted[0][1]:1;
+  const bl=document.getElementById('breakdownList');
+  if(!sorted.length){ bl.innerHTML='<div style="color:var(--text-muted);font-size:12px;padding:10px 0">Nessun dato nel periodo.</div>'; }
+  else { bl.innerHTML=sorted.map(([n,v])=>{
+    const isSpostato = n.includes('(In fossa)');
+    const isProdotto = n.includes('(prodotto)');
+    const isDigest  = n.includes('→ Digestore');
+    const isCompost = n.includes('→ Compostaggio');
+    const isInFossa = n.includes('(In fossa)');
+    const isInoculoProd = n.includes('(prodotto)') && n.toLowerCase().includes('inoculo');
+    const isInoculoRiut = n.includes('(riutilizzato)');
+    const barColor = isInFossa ? 'var(--accent3)' : isDigest ? '#b47fff' : isCompost ? '#47ffb0' : isInoculoProd ? '#ffb347' : isInoculoRiut ? '#ff8c69' : 'var(--accent)';
+    const valColor = isInFossa ? 'var(--accent3)' : isDigest ? '#b47fff' : isCompost ? '#47ffb0' : isInoculoProd ? '#ffb347' : isInoculoRiut ? '#ff8c69' : 'var(--accent)';
+    return `<div class="bk-item"><span class="bk-name">${n}</span><div class="bk-bar-w"><div class="bk-bar" style="width:${(v/maxV*100).toFixed(1)}%;background:${barColor}"></div></div><span class="bk-val" style="color:${valColor}">${fmtPeso(v)}</span></div>`;
+  }).join(''); }
+
+  // Camion breakdown
+  const camMap={};
+  f.forEach(r=>(r.camion?.carichi||[]).forEach(c=>{ if(c.nome) camMap[c.nome]=(camMap[c.nome]||{kg:0,n:0}); camMap[c.nome].kg+=(c.peso||0); camMap[c.nome].n+=(c.numCamion||0); }));
+  const sortedCam=Object.entries(camMap).sort((a,b)=>b[1].kg-a[1].kg);
+  const maxCam=sortedCam.length?sortedCam[0][1].kg:1;
+  const bc=document.getElementById('breakdownCamion');
+  if(!sortedCam.length){ bc.innerHTML='<div style="color:var(--text-muted);font-size:12px;padding:10px 0">Nessun carico camion nel periodo.</div>'; }
+  else { bc.innerHTML=sortedCam.map(([n,v])=>`<div class="bk-item"><span class="bk-name">${n}</span><div class="bk-bar-w"><div class="bk-bar" style="width:${(v.kg/maxCam*100).toFixed(1)}%;background:var(--accent2)"></div></div><span class="bk-val" style="color:var(--accent2)">${fmtPeso(v.kg)} · ${v.n} cam</span></div>`).join(''); }
+}
+
+// ── STORICO ───────────────────────────────────────────────────────────────
+function renderStorico(){
+  const c=document.getElementById('storicoList');
+  if(!reports.length){ c.innerHTML='<div class="empty"><div class="ico">📋</div><p>Nessun report ancora.<br>Inserisci il primo report giornaliero.</p></div>'; return; }
+  const sorted=[...reports].sort((a,b)=>new Date(b.data)-new Date(a.data));
+  c.innerHTML=sorted.map(r=>`
+    <div class="log-entry">
+      <div class="log-hdr">
+        <div>
+          <div class="log-date">${fmtData(r.data)} — ${r.turno}</div>
+          <div class="log-sub">${r.operatore}</div>
+        </div>
+        <div class="log-total">${fmtPeso(r.totale)}</div>
+      </div>
+      <div class="log-tags">
+        ${r.materiali.map(m=>`<div class="tag">${m.nome} <span>${fmtPeso(m.peso)}${m.da||m.a?' · '+[m.da,m.a].filter(Boolean).join('→'):''}</span></div>`).join('')}
+        ${r.camion?.carichi?.map(c=>`<div class="tag truck">🚛 ${c.nome} <span>${c.peso?fmtPeso(c.peso):''} ${c.numCamion?'· '+c.numCamion+' cam':''}</span></div>`).join('')||''}
+        ${r.ammendante?`<div class="tag box">🌱 <span>${r.ammendante.da?r.ammendante.da+' → ':''} ${r.ammendante.box} — ${fmtPeso(r.ammendante.qta)}</span></div>`:''}
+      </div>
+      ${r.note?`<div class="log-note">${r.note}</div>`:''}
+      <div class="log-actions">
+        <button class="log-act-btn edit" onclick="openEdit('${r.id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Modifica
+        </button>
+        <button class="log-act-btn del" onclick="deleteReport('${r.id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          Elimina
+        </button>
+      </div>
+    </div>`).join('');
+}
+
+// ── EXPORT ────────────────────────────────────────────────────────────────
+function exportCSV(){
+  if(!reports.length){ showToast('⚠ Nessun dato da esportare','#ff6b35'); return; }
+  const rows=[['Data','Operatore','Turno','Tipo','Sezione','Peso kg','N° Camion','Box Ammendante','Qty Ammendante kg','Totale kg','Note']];
+  reports.forEach(r=>{
+    const matRows=r.materiali.map(m=>['materiale',m.nome,m.da||'',m.a||'',m.peso,'','']);
+    const camRows=(r.camion?.carichi||[]).map(c=>['camion',c.nome,'',c.peso,c.numCamion,'','']);
+    const ammRow=r.ammendante?[['ammendante','',r.ammendante.box,r.ammendante.qta,'','',r.ammendante.qta]]:[];
+    const all=[...matRows,...camRows,...ammRow];
+    if(!all.length) all.push(['','','','','','','']);
+    all.forEach((row,i)=>{
+      rows.push([
+        r.data, i===0?r.operatore:'', i===0?r.turno:'',
+        row[0], row[1], row[3]||'', row[4]||'',
+        i===0&&r.ammendante?r.ammendante.box:'',
+        i===0&&r.ammendante?r.ammendante.qta:'',
+        i===0?r.totale:'', i===0?r.note:''
+      ]);
+    });
+  });
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv,{type:'text/csv;charset=utf-8;'}]));
+  a.download=`pesolog_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+}
+
+// ── PIN ───────────────────────────────────────────────────────────────────
+let pinBuffer='';
+function openPin(){ pinBuffer=''; updatePinDots(); document.getElementById('pinError').textContent=''; document.getElementById('pinOverlay').classList.add('open'); }
+function pinPress(d){
+  if(pinBuffer.length>=4) return;
+  pinBuffer+=d; updatePinDots();
+  if(pinBuffer.length===4){
+    if(pinBuffer===settings.pin){
+      closeOverlay('pinOverlay');
+      setTimeout(openSettings,200);
+    } else {
+      document.getElementById('pinError').textContent='PIN errato. Riprova.';
+      setTimeout(()=>{ pinBuffer=''; updatePinDots(); document.getElementById('pinError').textContent=''; },900);
+    }
+  }
+}
+function pinDel(){ pinBuffer=pinBuffer.slice(0,-1); updatePinDots(); }
+function updatePinDots(){ for(let i=0;i<4;i++) document.getElementById('pd'+i).classList.toggle('filled',i<pinBuffer.length); }
+
+// ── SETTINGS ─────────────────────────────────────────────────────────────
+function openSettings(){
+  ['Operatori','Materiali','Box','Luoghi'].forEach(k=>renderSettingsList(k.toLowerCase(),'settings'+k));
+  renderEmailList();
+  const savedUrl = localStorage.getItem('pl_script_url') || '';
+  if(savedUrl){
+    document.getElementById('clientIdStatus').textContent = '✓ Script URL configurato';
+    document.getElementById('clientIdStatus').style.color = 'var(--success)';
+  }
+  document.getElementById('dispositivoStatus').textContent = '✓ Dispositivo attuale: ' + (settings.dispositivo||'pc') + ' — file: pesolog_dati_' + (settings.dispositivo||'pc') + '.json';
+  document.getElementById('dispositivoStatus').style.color = 'var(--accent3)';
+  document.getElementById('settingsOverlay').classList.add('open');
+}
+function renderSettingsList(key,cid){
+  document.getElementById(cid).innerHTML=settings[key].map((v,i)=>`
+    <div class="settings-item">
+      <span class="settings-item-name">${v}</span>
+      <button class="settings-del" onclick="delSetting('${key}',${i})">✕</button>
+    </div>`).join('') || '<div style="font-size:12px;color:var(--text-muted);padding:6px 0">Nessun elemento.</div>';
+}
+function addSetting(key,inputId,label){
+  const v=document.getElementById(inputId).value.trim();
+  if(!v) return;
+  if(!settings[key].includes(v)){ settings[key].push(v); saveSettings(); }
+  document.getElementById(inputId).value='';
+  renderSettingsList(key,'settings'+label);
+  populateSelects();
+  refreshDatalist();
+}
+function delSetting(key,i){
+  if(!confirm('Eliminare "'+settings[key][i]+'"?')) return;
+  settings[key].splice(i,1); saveSettings();
+  const labels={operatori:'Operatori',materiali:'Materiali',box:'Box',luoghi:'Luoghi'};
+  renderSettingsList(key,'settings'+labels[key]);
+  populateSelects(); refreshDatalist();
+}
+function changePin(){
+  const v=document.getElementById('newPin').value.trim();
+  if(!/^\d{4}$/.test(v)){ showToast('⚠ PIN deve essere 4 cifre','#ff6b35'); return; }
+  settings.pin=v; saveSettings(); document.getElementById('newPin').value='';
+  showToast('✓ PIN aggiornato');
+}
+
+function refreshDatalist(){
+  const dl=document.getElementById('dl_mat');
+  if(dl){ dl.innerHTML=''; settings.materiali.forEach(m=>{ const o=document.createElement('option'); o.value=m; dl.appendChild(o); }); }
+  const dl2=document.getElementById('dl_luoghi');
+  if(dl2){ dl2.innerHTML=''; settings.luoghi.forEach(l=>{ const o=document.createElement('option'); o.value=l; dl2.appendChild(o); }); }
+}
+function closeOverlay(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); }));
+
+// ── EXPORT CONFIGURED FILE ────────────────────────────────────────────────
+function exportConfiguredFile(){
+  // Get the full page HTML as-is from the DOM source
+  // We use XMLSerializer to get the actual current DOM
+  const fullSrc = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+
+  // The settings object in the source uses a known pattern — replace it
+  // by injecting current settings as the fallback default
+  const settingsJson = JSON.stringify(settings);
+  const result = fullSrc.replace(
+    /let settings = JSON\.parse\([^)]+\) \|\| [^;]+;/,
+    "let settings = JSON.parse(localStorage.getItem('pl_settings') || 'null') || " + settingsJson + ";"
+  );
+
+  const blob = new Blob([result], {type: 'text/html;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'pesolog_configurato_' + new Date().toISOString().split('T')[0] + '.html';
+  a.click();
+  showToast('\u2713 File configurato scaricato!');
+}
+
+// ── GOOGLE DRIVE ─────────────────────────────────────────────────────────
+function getDriveFilename(){ return 'pesolog_dati.json'; }
+function getDriveCSVFilename(){ return 'pesolog_dati.csv'; }
+function getDriveConfFilename(){ return 'pesolog_conf.json'; }
+
+async function syncToDrive(silent=false){
+  const scriptUrl = localStorage.getItem('pl_script_url') || '';
+  if(!scriptUrl) return;
+
+  const btn = document.getElementById('gdriveBtn');
+  if(!silent){
+    btn.disabled = true; btn.classList.add('loading');
+    btn.textContent = 'Salvataggio...';
+  }
+  const resetBtn = () => {
+    btn.disabled = false; btn.classList.remove('loading');
+    btn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg> Salva su Google Drive`;
+  };
+  const safetyTimeout = setTimeout(() => {
+    resetBtn();
+    if(!silent){
+      document.getElementById('driveHint').textContent = '⚠ Timeout — verifica lo Script URL';
+      document.getElementById('driveHint').style.color = 'var(--accent2)';
+    }
+  }, 20000);
+
+  try {
+    // Salva JSON reports (merge lato script)
+    await fetch(scriptUrl, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'merge',
+        filename: getDriveFilename(),
+        json: JSON.stringify(reports),
+        dispositivo: settings.dispositivo||'pc'
+      })
+    });
+    // Salva CSV aggiornato
+    await fetch(scriptUrl, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename: getDriveCSVFilename(), json: buildCSV() })
+    });
+    // Salva conferimenti (merge)
+    await fetch(scriptUrl, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'merge',
+        filename: getDriveConfFilename(),
+        json: JSON.stringify(conferimenti),
+        dispositivo: settings.dispositivo||'pc'
+      })
+    });
+    clearTimeout(safetyTimeout);
+    if(!silent){
+      resetBtn();
+      document.getElementById('driveHint').textContent = '✓ Dati salvati in Drive > PesoLog (' + reports.length + ' report)';
+      document.getElementById('driveHint').style.color = 'var(--success)';
+      showToast('✓ Salvato su Google Drive!', 'var(--success)');
+    }
+  } catch(e) {
+    clearTimeout(safetyTimeout);
+    if(!silent){
+      resetBtn();
+      document.getElementById('driveHint').textContent = '⚠ ' + (e.message||'Errore. Riprova.');
+      document.getElementById('driveHint').style.color = 'var(--accent2)';
+    }
+  }
+}
+
+function uploadToDrive(){ syncToDrive(false); }
+
+function buildCSV(){
+  const rows=[['Data','Operatore','Turno','Tipo','Materiale/Carico','Da','A','Peso kg','N° Camion','Box Ammendante','Qty Ammendante kg','Totale kg','Note']];
+  reports.forEach(r=>{
+    const matRows=r.materiali.map(m=>['materiale',m.nome,m.da||'',m.a||'',m.peso,'','']);
+    const camRows=(r.camion?.carichi||[]).map(c=>['camion',c.nome,'','',c.peso,c.numCamion,'']);
+    const ammRow=r.ammendante?[['ammendante','','',r.ammendante.box,r.ammendante.qta,'',r.ammendante.qta]]:[];
+    const all=[...matRows,...camRows,...ammRow];
+    if(!all.length) all.push(['','','','','','','']);
+    all.forEach((row,i)=>{
+      rows.push([r.data,i===0?r.operatore:'',i===0?r.turno:'',
+        row[0],row[1],row[2]||'',row[3]||'',row[4]||'',row[5]||'',
+        i===0&&r.ammendante?r.ammendante.box:'',
+        i===0&&r.ammendante?r.ammendante.qta:'',
+        i===0?r.totale:'',i===0?r.note:'']);
+    });
+  });
+  return rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+}
+
+function saveScriptUrl(){
+  const v = document.getElementById('scriptUrlInput').value.trim();
+  if(!v || !v.startsWith('https://script.google.com')){
+    showToast('⚠ URL non valido','#ff6b35'); return;
+  }
+  localStorage.setItem('pl_script_url', v);
+  document.getElementById('clientIdStatus').textContent = '✓ Script URL salvato';
+  document.getElementById('clientIdStatus').style.color = 'var(--success)';
+  document.getElementById('scriptUrlInput').value = '';
+  showToast('✓ Script URL salvato');
+}
+
+function ripristinaDaDrive(){
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.json';
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        let data = JSON.parse(ev.target.result.trim());
+        if(!Array.isArray(data)){
+          if(data.reports && Array.isArray(data.reports)) data = data.reports;
+          else throw new Error('Formato non valido');
+        }
+        data = data.filter(r => r && r.id && r.data);
+        data.forEach(r => { r.materiali = r.materiali || []; });
+        const existing = new Set(reports.map(r=>String(r.id)));
+        let nuovi = 0;
+        data.forEach(r => { if(!existing.has(String(r.id))){ reports.push(r); nuovi++; } });
+        reports.sort((a,b)=>new Date(a.data)-new Date(b.data));
+        saveData();
+        renderStorico();
+        renderRiepilogo();
+        showToast('✓ ' + (nuovi>0 ? nuovi+' report ripristinati' : 'Già aggiornati'), 'var(--success)');
+        document.getElementById('driveHint').textContent = '✓ Ripristino completato: '+data.length+' report totali';
+        document.getElementById('driveHint').style.color = 'var(--success)';
+      } catch(err){
+        showToast('⚠ Errore: ' + err.message,'#ff6b35');
+        console.error('Errore ripristina:', err);
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+
+// ── EDIT / DELETE ────────────────────────────────────────────────────────
+let editingId = null;
+let editMatCnt = 0;
+
+function deleteReport(id){
+  if(!confirm('Eliminare questo report?')) return;
+  reports = reports.filter(r => String(r.id) !== String(id));
+  saveData();
+  syncToDrive(true);
+  renderStorico();
+  renderRiepilogo();
+  showToast('✓ Report eliminato');
+}
+
+function openEdit(id){
+  const r = reports.find(r => String(r.id) === String(id));
+  if(!r) return;
+  editingId = id;
+
+  document.getElementById('editData').value = r.data;
+
+  // Populate operatore select
+  const opSel = document.getElementById('editOperatore');
+  opSel.innerHTML = '<option value="">Seleziona...</option>';
+  settings.operatori.forEach(o => { const e=document.createElement('option'); e.value=e.textContent=o; opSel.appendChild(e); });
+  opSel.value = r.operatore;
+
+  document.getElementById('editTurno').value = r.turno;
+  document.getElementById('editNote').value = r.note || '';
+
+  // Populate material rows
+  const ml = document.getElementById('editMaterialList');
+  ml.innerHTML = ''; editMatCnt = 0;
+  if(r.materiali.length === 0){
+    addEditMaterial();
+  } else {
+    r.materiali.forEach(m => addEditMaterial(m));
+  }
+
+  // Populate camion rows
+  const cl = document.getElementById('editCamionList');
+  cl.innerHTML = ''; editCamCnt = 0;
+  const carichi = r.camion?.carichi || [];
+  if(carichi.length === 0){
+    addEditCamionRow();
+  } else {
+    carichi.forEach(c => addEditCamionRow(c));
+  }
+
+  // Populate editBoxInput
+  const editBx = document.getElementById('editBoxInput');
+  editBx.innerHTML = '<option value="">Seleziona box...</option>';
+  settings.box.forEach(b => { const e=document.createElement('option'); e.value=e.textContent=b; editBx.appendChild(e); });
+
+  // Fill ammendante fields
+  document.getElementById('editAmmDa').value  = r.ammendante?.da  || '';
+  document.getElementById('editBoxInput').value = r.ammendante?.box || '';
+  document.getElementById('editAmmQta').value  = r.ammendante?.qta || '';
+
+  document.getElementById('editOverlay').classList.add('open');
+}
+
+function addEditMaterial(data){
+  editMatCnt++;
+  const id = 'em'+editMatCnt;
+  const div = document.createElement('div');
+  div.className = 'mat-row'; div.id = id;
+  div.style.cssText = 'display:grid;grid-template-columns:2fr 1fr 1fr 1fr 34px;gap:6px;align-items:center;margin-bottom:8px;';
+  div.innerHTML = `
+    <input type="text" class="mn" placeholder="Materiale" list="dl_mat" style="margin-bottom:0;" value="${data?.nome||''}">
+    <input type="number" class="mp" placeholder="kg" min="0" step="0.1" style="margin-bottom:0;" value="${data?.peso||''}">
+    <input type="text" class="mda" placeholder="Da" list="dl_luoghi" style="margin-bottom:0;" value="${data?.da||''}">
+    <input type="text" class="ma" placeholder="A" list="dl_luoghi" style="margin-bottom:0;" value="${data?.a||''}">
+    <button class="rm-btn" onclick="this.closest('.mat-row').remove()">✕</button>`;
+  document.getElementById('editMaterialList').appendChild(div);
+}
+
+let editCamCnt = 0;
+function addEditCamionRow(data){
+  editCamCnt++;
+  const id = 'ec'+editCamCnt;
+  const div = document.createElement('div');
+  div.className = 'mat-row'; div.id = id;
+  div.style.cssText = 'display:grid;grid-template-columns:2fr 1fr 1fr 34px;gap:6px;align-items:center;margin-bottom:8px;';
+  div.innerHTML = `
+    <input type="text" class="cn" placeholder="Tipo carico" list="dl_mat" style="margin-bottom:0;" value="${data?.nome||''}">
+    <input type="number" class="cp" placeholder="kg" min="0" step="0.1" style="margin-bottom:0;" value="${data?.peso||''}">
+    <input type="number" class="cc" placeholder="n° cam" min="0" style="margin-bottom:0;text-align:center;" value="${data?.numCamion||''}">
+    <button class="rm-btn" onclick="this.closest('.mat-row').remove()">✕</button>`;
+  document.getElementById('editCamionList').appendChild(div);
+}
+
+function saveEdit(){
+  const idx = reports.findIndex(r => String(r.id) === String(editingId));
+  if(idx === -1) return;
+
+  const data    = document.getElementById('editData').value;
+  const operatore = document.getElementById('editOperatore').value;
+  const turno   = document.getElementById('editTurno').value;
+  const note    = document.getElementById('editNote').value.trim();
+
+  if(!data || !operatore){ showToast('⚠ Inserisci data e operatore','#ff6b35'); return; }
+
+  const materiali = [];
+  document.querySelectorAll('#editMaterialList .mat-row').forEach(row => {
+    const n = row.querySelector('.mn').value.trim();
+    const p = parseFloat(row.querySelector('.mp').value)||0;
+    const da = row.querySelector('.mda').value.trim();
+    const a  = row.querySelector('.ma').value.trim();
+    if(n && p>0) materiali.push({nome:n, peso:p, da, a});
+  });
+
+  // Read updated camion rows
+  const carichi = [];
+  document.querySelectorAll('#editCamionList .mat-row').forEach(row => {
+    const n = row.querySelector('.cn').value.trim();
+    const p = parseFloat(row.querySelector('.cp').value)||0;
+    const c = parseInt(row.querySelector('.cc').value)||0;
+    if(n) carichi.push({nome:n, peso:p, numCamion:c});
+  });
+  const camion = carichi.length ? {carichi} : (reports[idx].camion || null);
+
+  // Read updated ammendante
+  const editBox = document.getElementById('editBoxInput').value;
+  const editAmmQta = parseFloat(document.getElementById('editAmmQta').value)||0;
+  const editAmmDa = document.getElementById('editAmmDa').value.trim();
+  const ammendante = editBox ? {box:editBox, qta:editAmmQta, da:editAmmDa} : null;
+
+  const totCarichi = carichi.reduce((s,c)=>s+c.peso,0);
+  const totale = materiali.reduce((s,m)=>s+m.peso,0) + totCarichi + (ammendante?.qta||0);
+
+  reports[idx] = { ...reports[idx], data, operatore, turno, materiali, camion, ammendante, totale, note };
+  saveData();
+  syncToDrive(true);
+  closeOverlay('editOverlay');
+  renderStorico();
+  renderRiepilogo();
+  showToast('✓ Report aggiornato');
+}
+
+// ── STAMPA PDF ───────────────────────────────────────────────────────────
+function stampaPDF(){
+  const da  = document.getElementById('filterDa').value;
+  const a   = document.getElementById('filterA').value;
+  const f   = getFiltered();
+
+  if(!f.length){ showToast('⚠ Nessun dato nel periodo','#ff6b35'); return; }
+
+  const totPeso   = f.reduce((s,r)=>s+r.totale,0);
+  const totCamion = f.reduce((s,r)=>s+(r.camion?.carichi||[]).reduce((a,c)=>a+(c.numCamion||0),0),0);
+  const totAmm    = f.reduce((s,r)=>s+(r.ammendante?.qta||0),0);
+
+  // Materiali breakdown (stessa logica di renderRiepilogo)
+  const matMap={};
+  f.forEach(r=>(r.materiali||[]).forEach(m=>{
+    const nl = m.nome.toLowerCase();
+    const da = (m.da||'').trim();
+    const a  = (m.a||'').trim();
+    const daL = da.toLowerCase();
+    const aL  = a.toLowerCase();
+
+    if(nl.includes('sovvallo')){
+      const key = daL.includes('50x50') ? m.nome+' (In fossa)' : m.nome+' (prodotto)';
+      matMap[key]=(matMap[key]||0)+m.peso;
+
+    } else if(nl.includes('inoculo')){
+      // Inoculo riutilizzato: inserito a mano con campo A compilato
+      if(a) { const k=m.nome+' (riutilizzato)'; matMap[k]=(matMap[k]||0)+m.peso; }
+      // Inoculo prodotto calcolato dopo (Vagliatura - Sovvallo prodotto)
+
+    } else if(nl.includes('organico')){
+      if(!da) matMap[m.nome]=(matMap[m.nome]||0)+m.peso;
+      if(aL.includes('dige'))            { const k=m.nome+' → Digestore';    matMap[k]=(matMap[k]||0)+m.peso; }
+      if(aL.includes('biocella') && !da) { const k=m.nome+' → Compostaggio'; matMap[k]=(matMap[k]||0)+m.peso; }
+
+    } else {
+      matMap[m.nome]=(matMap[m.nome]||0)+m.peso;
+    }
+  }));
+  // Inoculo (prodotto) = Vagliatura - Sovvallo (prodotto)
+  {
+    let totVagliatura = 0, totSovvalloProdotto = 0;
+    let nomeInoculo = 'Inoculo';
+    f.forEach(r=>(r.materiali||[]).forEach(m=>{
+      const nl = m.nome.toLowerCase();
+      if(nl.includes('vagliatura')) totVagliatura += (m.peso||0);
+      if(nl.includes('sovvallo') && !(m.da||'').toLowerCase().includes('50x50')) totSovvalloProdotto += (m.peso||0);
+      if(nl.includes('inoculo')) nomeInoculo = m.nome;
+    }));
+    const inoculoProdotto = Math.max(0, totVagliatura - totSovvalloProdotto);
+    if(inoculoProdotto > 0) matMap[nomeInoculo+' (prodotto)'] = inoculoProdotto;
+  }
+  const sortedMat=Object.entries(matMap).sort((a,b)=>b[1]-a[1]);
+
+  // Camion breakdown
+  const camMap={};
+  f.forEach(r=>(r.camion?.carichi||[]).forEach(c=>{
+    if(c.nome){ camMap[c.nome]=camMap[c.nome]||{kg:0,n:0}; camMap[c.nome].kg+=(c.peso||0); camMap[c.nome].n+=(c.numCamion||0); }
+  }));
+  const sortedCam=Object.entries(camMap).sort((a,b)=>b[1].kg-a[1].kg);
+
+  const periodoStr = da&&a ? `${da} — ${a}` : da ? `Dal ${da}` : a ? `Fino al ${a}` : 'Tutto il periodo';
+  const now = new Date().toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+
+  // Ordine fisso per il PDF
+  const ordineVoci = [
+    '→ Digestore', '→ Compostaggio',
+    'organico',
+    'vagliatura',
+    'sovvallo (prodotto)',
+    'inoculo (prodotto)',
+    'inoculo (riutilizzato)',
+    'sovvallo (in fossa)'
+  ];
+  const sortedPDF = [...sortedMat].sort(([a],[b])=>{
+    const ia = ordineVoci.findIndex(k => a.toLowerCase().includes(k));
+    const ib = ordineVoci.findIndex(k => b.toLowerCase().includes(k));
+    const ra = ia === -1 ? 999 : ia;
+    const rb = ib === -1 ? 999 : ib;
+    if(ra !== rb) return ra - rb;
+    return a.localeCompare(b);
+  });
+  const matRows = sortedPDF.map(([n,v])=>`
+    <tr><td>${n}</td><td style="text-align:right;font-weight:600;">${fmtPeso(v)}</td></tr>`).join('');
+
+  const camRows = sortedCam.length ? sortedCam.map(([n,v])=>`
+    <tr><td>${n}</td><td style="text-align:right;">${fmtPeso(v.kg)}</td><td style="text-align:right;font-weight:600;">${v.n} cam</td></tr>`).join('') :
+    '<tr><td colspan="3" style="color:#aaa;font-style:italic;">Nessun carico camion</td></tr>';
+
+  const ammRow = totAmm>0 ? `<tr style="border-top:2px solid #000;">
+    <td><strong>Ammendante prodotto</strong></td><td style="text-align:right;font-weight:600;">${fmtPeso(totAmm)}</td></tr>` : '';
+
+  document.getElementById('printArea').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;border-bottom:2px solid #000;padding-bottom:12px;">
+      <div>
+        <div style="font-size:22px;font-weight:800;letter-spacing:-1px;">PESO<span style="color:#666">LOG</span></div>
+        <div style="font-size:13px;color:#666;margin-top:2px;">Report riepilogativo</div>
+      </div>
+      <div style="text-align:right;font-size:12px;color:#666;">
+        <div><strong>Periodo:</strong> ${periodoStr}</div>
+        <div>Stampato: ${now}</div>
+        <div>Report inclusi: ${f.length}</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;">
+      <div style="border:1px solid #ddd;border-radius:8px;padding:12px;">
+        <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px;">Peso totale</div>
+        <div style="font-size:20px;font-weight:800;margin-top:4px;">${fmtPeso(totPeso)}</div>
+      </div>
+      <div style="border:1px solid #ddd;border-radius:8px;padding:12px;">
+        <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px;">Camion caricati</div>
+        <div style="font-size:20px;font-weight:800;margin-top:4px;">${totCamion}</div>
+      </div>
+      <div style="border:1px solid #ddd;border-radius:8px;padding:12px;">
+        <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px;">Ammendante</div>
+        <div style="font-size:20px;font-weight:800;margin-top:4px;">${fmtPeso(totAmm)}</div>
+      </div>
+    </div>
+
+    <h3 style="font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;color:#333;">Per tipo di materiale</h3>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:24px;font-size:13px;">
+      <thead><tr style="background:#f0f0f0;">
+        <th style="text-align:left;padding:8px;border:1px solid #ddd;">Materiale</th>
+        <th style="text-align:right;padding:8px;border:1px solid #ddd;">Peso</th>
+      </tr></thead>
+      <tbody style="border:1px solid #ddd;">${matRows}${ammRow}</tbody>
+    </table>
+
+    <h3 style="font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;color:#333;">Carico camion per tipologia</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead><tr style="background:#f0f0f0;">
+        <th style="text-align:left;padding:8px;border:1px solid #ddd;">Tipo carico</th>
+        <th style="text-align:right;padding:8px;border:1px solid #ddd;">Peso</th>
+        <th style="text-align:right;padding:8px;border:1px solid #ddd;">N° camion</th>
+      </tr></thead>
+      <tbody style="border:1px solid #ddd;">${camRows}</tbody>
+    </table>
+  `;
+
+  window.print();
+}
+
+// ── GRAFICI ──────────────────────────────────────────────────────────────
+// Carica Chart.js dinamicamente
+(function(){
+  const s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
+  s.onload=()=>{ if(document.getElementById('page-grafici').classList.contains('active')) renderGrafici(); };
+  document.head.appendChild(s);
+})();
+
+let chartPesi=null, chartMensile=null, chartAmm=null;
+
+function setGrafPeriod(period, btn){
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  let da;
+  if(period==='mese'){ da=today.slice(0,7)+'-01'; }
+  else if(period==='3mesi'){ const d=new Date(now); d.setMonth(d.getMonth()-3); da=d.toISOString().split('T')[0]; }
+  else if(period==='anno'){ da=now.getFullYear()+'-01-01'; }
+  else { da=''; }
+  document.getElementById('grafDa').value=da;
+  document.getElementById('grafA').value=today;
+  document.querySelectorAll('#page-grafici .ptab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderGrafici();
+}
+
+function getGrafFiltered(){
+  const da=document.getElementById('grafDa')?.value||'';
+  const a=document.getElementById('grafA')?.value||'';
+  return reports.filter(r=>{
+    if(da&&r.data<da) return false;
+    if(a&&r.data>a) return false;
+    return true;
+  });
+}
+
+function getWeekKey(dateStr){
+  const d=new Date(dateStr+'T12:00:00');
+  const mon=new Date(d); mon.setDate(d.getDate()-((d.getDay()+6)%7));
+  return mon.toISOString().split('T')[0];
+}
+
+function renderGrafici(){
+  if(typeof Chart==='undefined') return;
+  const f=getGrafFiltered();
+  if(!f.length) return;
+
+  // ── Aggregazione settimanale ──
+  const weekMap={};
+  f.forEach(r=>{
+    const wk=getWeekKey(r.data);
+    if(!weekMap[wk]) weekMap[wk]={peso:0,amm:0,mat:{}};
+    weekMap[wk].peso+=r.totale;
+    weekMap[wk].amm+=(r.ammendante?.qta||0);
+    r.materiali.forEach(m=>{
+      weekMap[wk].mat[m.nome]=(weekMap[wk].mat[m.nome]||0)+m.peso;
+    });
+  });
+  const weeks=Object.keys(weekMap).sort();
+
+  // Etichetta: "10/03 - 16/03"
+  const labelWeeks=weeks.map(w=>{
+    const mon=new Date(w+'T12:00:00');
+    const sun=new Date(mon); sun.setDate(mon.getDate()+6);
+    const fmt=d=>d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'});
+    return fmt(mon)+' - '+fmt(sun);
+  });
+
+  // Top 5 materiali per quantità totale nel periodo
+  const matTot={};
+  f.forEach(r=>(r.materiali||[]).forEach(m=>{ matTot[m.nome]=(matTot[m.nome]||0)+m.peso; }));
+  const top5=Object.entries(matTot).sort((a,b)=>b[1]-a[1]).slice(0,5).map(x=>x[0]);
+  const palette=['#e8ff47','#47c9ff','#ff6b35','#47ff8a','#b47fff'];
+
+  const gridColor='rgba(255,255,255,0.08)';
+  const textColor='#888';
+  const tooltipKg=(ctx)=>ctx.parsed.y.toLocaleString('it-IT')+' kg';
+  const baseOpts={
+    responsive:true,
+    plugins:{
+      legend:{labels:{color:textColor,font:{size:11}}},
+      tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.parsed.y.toLocaleString('it-IT')+' kg'}}
+    },
+    scales:{
+      x:{ticks:{color:textColor,font:{size:10},maxRotation:45},grid:{color:gridColor}},
+      y:{ticks:{color:textColor,font:{size:10},callback:v=>v>=1000?(v/1000).toFixed(1)+'t':v+' kg'},grid:{color:gridColor}}
+    }
+  };
+
+  // CHART 1 — Andamento pesi settimanali (linea)
+  if(chartPesi) chartPesi.destroy();
+  chartPesi=new Chart(document.getElementById('chartPesi'),{
+    type:'line',
+    data:{
+      labels:labelWeeks,
+      datasets:[{
+        label:'Peso totale',
+        data:weeks.map(w=>Math.round(weekMap[w].peso)),
+        borderColor:'#e8ff47',backgroundColor:'rgba(232,255,71,0.08)',
+        tension:0.3,pointBackgroundColor:'#e8ff47',pointRadius:5,pointHoverRadius:7,fill:true
+      }]
+    },
+    options:baseOpts
+  });
+
+  // CHART 2 — Confronto settimanale per materiale (barre raggruppate)
+  if(chartMensile) chartMensile.destroy();
+  chartMensile=new Chart(document.getElementById('chartMensile'),{
+    type:'bar',
+    data:{
+      labels:labelWeeks,
+      datasets:top5.map((mat,i)=>({
+        label:mat,
+        data:weeks.map(w=>Math.round(weekMap[w].mat[mat]||0)),
+        backgroundColor:palette[i]+'bb',
+        borderColor:palette[i],
+        borderWidth:1
+      }))
+    },
+    options:{...baseOpts}
+  });
+
+  // CHART 3 — Ammendante settimanale (barre)
+  if(chartAmm) chartAmm.destroy();
+  chartAmm=new Chart(document.getElementById('chartAmm'),{
+    type:'bar',
+    data:{
+      labels:labelWeeks,
+      datasets:[{
+        label:'Ammendante prodotto',
+        data:weeks.map(w=>Math.round(weekMap[w].amm)),
+        backgroundColor:'rgba(71,255,138,0.65)',
+        borderColor:'#47ff8a',borderWidth:1
+      }]
+    },
+    options:baseOpts
+  });
+}
+
+// ── STAMPA DIGESTORI ─────────────────────────────────────────────────────
+function stampaDigestori(){
+  const da  = document.getElementById('filterDa').value;
+  const a   = document.getElementById('filterA').value;
+  const f   = getFiltered();
+
+  if(!f.length){ showToast('⚠ Nessun dato nel periodo','#ff6b35'); return; }
+
+  // Raccogli tutti i carichi organico → digestore, raggruppati per digestore
+  // Struttura: { 'Dige1': [ {data, kg}, ... ], ... }
+  const digeCarichi = {};
+  f.forEach(r => r.materiali.forEach(m => {
+    const nl = m.nome.toLowerCase();
+    const aVal = (m.a||'').toLowerCase();
+    if(nl.includes('organico') && aVal.includes('dige')){
+      const dige = (m.a||'').trim();
+      if(!digeCarichi[dige]) digeCarichi[dige] = [];
+      digeCarichi[dige].push({ data: r.data, kg: m.peso||0 });
+    }
+  }));
+
+  if(!Object.keys(digeCarichi).length){
+    showToast('⚠ Nessun carico digestore nel periodo','#ff6b35');
+    return;
+  }
+
+  // Per ogni digestore, raggruppa in cicli (gap > 7 giorni = nuovo ciclo)
+  // Ogni ciclo: { dataFine, totKg }
+  const GAP_GIORNI = 7;
+  const cicli = []; // [{dige, dataFine, totKg}]
+
+  Object.entries(digeCarichi).forEach(([dige, carichi]) => {
+    // Ordina per data
+    carichi.sort((a,b) => a.data.localeCompare(b.data));
+
+    let cicloKg = 0;
+    let ultimaData = null;
+    let dataFineCiclo = null;
+
+    carichi.forEach((c, i) => {
+      if(ultimaData === null){
+        // Primo carico
+        cicloKg = c.kg;
+        ultimaData = c.data;
+        dataFineCiclo = c.data;
+      } else {
+        const diffGiorni = (new Date(c.data) - new Date(ultimaData)) / 86400000;
+        if(diffGiorni > GAP_GIORNI){
+          // Nuovo ciclo — salva quello precedente
+          cicli.push({ dige, dataFine: dataFineCiclo, totKg: cicloKg });
+          cicloKg = c.kg;
+          dataFineCiclo = c.data;
+        } else {
+          // Stesso ciclo
+          cicloKg += c.kg;
+          dataFineCiclo = c.data; // aggiorna data fine
+        }
+        ultimaData = c.data;
+      }
+      // Ultimo elemento: salva ciclo corrente
+      if(i === carichi.length - 1){
+        cicli.push({ dige, dataFine: dataFineCiclo, totKg: cicloKg });
+      }
+    });
+  });
+
+  // Ordina per data fine ciclo, poi per digestore
+  cicli.sort((a,b) => a.dataFine.localeCompare(b.dataFine) || a.dige.localeCompare(b.dige));
+
+  const totale = cicli.reduce((s,c) => s + c.totKg, 0);
+  const periodoStr = da&&a ? `${da} — ${a}` : da ? `Dal ${da}` : a ? `Fino al ${a}` : 'Tutto il periodo';
+  const now = new Date().toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+
+  const righe = cicli.map((c, i) => `
+    <tr style="background:${i%2===0?'#f9f9f9':'#fff'}">
+      <td style="padding:10px 12px;border:1px solid #ddd;font-weight:600;">
+        ${new Date(c.dataFine+'T12:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'})}
+      </td>
+      <td style="padding:10px 12px;border:1px solid #ddd;font-weight:700;">${c.dige}</td>
+      <td style="padding:10px 12px;border:1px solid #ddd;text-align:right;font-weight:700;">${fmtPeso(c.totKg)}</td>
+      <td style="padding:10px 12px;border:1px solid #ddd;text-align:right;color:#666;">${totale>0?(c.totKg/totale*100).toFixed(1)+'%':'-'}</td>
+    </tr>`).join('');
+
+  document.getElementById('printArea').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;border-bottom:2px solid #000;padding-bottom:12px;">
+      <div>
+        <div style="font-size:22px;font-weight:800;letter-spacing:-1px;">PESO<span style="color:#666">LOG</span></div>
+        <div style="font-size:14px;font-weight:700;margin-top:4px;color:#333;">Report Carico Digestori</div>
+      </div>
+      <div style="text-align:right;font-size:12px;color:#666;">
+        <div><strong>Periodo:</strong> ${periodoStr}</div>
+        <div>Stampato: ${now}</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:24px;">
+      <div style="border:1px solid #ddd;border-radius:8px;padding:12px;">
+        <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Totale caricato</div>
+        <div style="font-size:20px;font-weight:800;">${fmtPeso(totale)}</div>
+      </div>
+      <div style="border:1px solid #ddd;border-radius:8px;padding:12px;">
+        <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Cicli di carico</div>
+        <div style="font-size:20px;font-weight:800;">${cicli.length}</div>
+      </div>
+      <div style="border:1px solid #ddd;border-radius:8px;padding:12px;">
+        <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Digestori coinvolti</div>
+        <div style="font-size:20px;font-weight:800;">${new Set(cicli.map(c=>c.dige)).size}</div>
+      </div>
+    </div>
+
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="background:#1a1a1a;color:#fff;">
+          <th style="padding:10px 12px;text-align:left;border:1px solid #333;">Data fine carico</th>
+          <th style="padding:10px 12px;text-align:left;border:1px solid #333;">Digestore</th>
+          <th style="padding:10px 12px;text-align:right;border:1px solid #333;">Quantità totale</th>
+          <th style="padding:10px 12px;text-align:right;border:1px solid #333;">% sul totale</th>
+        </tr>
+      </thead>
+      <tbody>${righe}</tbody>
+      <tfoot>
+        <tr style="background:#f0f0f0;font-weight:700;">
+          <td style="padding:10px 12px;border:1px solid #ddd;" colspan="2">TOTALE</td>
+          <td style="padding:10px 12px;border:1px solid #ddd;text-align:right;">${fmtPeso(totale)}</td>
+          <td style="padding:10px 12px;border:1px solid #ddd;text-align:right;">100%</td>
+        </tr>
+      </tfoot>
+    </table>
+    <div style="margin-top:12px;font-size:11px;color:#888;">
+      * I cicli sono calcolati automaticamente: carichi dello stesso digestore con meno di 7 giorni di distanza vengono considerati parte dello stesso ciclo di carico.
+    </div>
+  `;
+
+  window.print();
+}
+
+// ── DISPOSITIVO ──────────────────────────────────────────────────────────
+function saveDispositivo(){
+  const v = document.getElementById('dispositvoInput').value.trim().toLowerCase().replace(/\s+/g,'_');
+  if(!v){ showToast('⚠ Inserisci un nome','#ff6b35'); return; }
+  settings.dispositivo = v;
+  saveSettings();
+  document.getElementById('dispositvoInput').value = '';
+  document.getElementById('dispositivoStatus').textContent = '✓ Dispositivo: ' + v + ' — file Drive: pesolog_dati_' + v + '.json';
+  document.getElementById('dispositivoStatus').style.color = 'var(--success)';
+  showToast('✓ Dispositivo salvato: ' + v);
+}
+
+function ripristinaConferimenti(){
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.json';
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if(!Array.isArray(data)) throw new Error('Formato non valido');
+        const existing = new Set(conferimenti.map(c=>String(c.id)));
+        let nuovi = 0;
+        data.forEach(c => { if(!existing.has(String(c.id))){ conferimenti.push(c); nuovi++; } });
+        conferimenti.sort((a,b)=>a.data.localeCompare(b.data));
+        saveConferimenti();
+        renderDepositi();
+        showToast('✓ ' + (nuovi>0 ? nuovi+' conferimenti ripristinati' : 'Già aggiornati'), 'var(--success)');
+      } catch(err) { showToast('⚠ File non valido','#ff6b35'); }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+function unisciDaAltroDispositivo(){
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.json';
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        let data = JSON.parse(ev.target.result.trim());
+        if(!Array.isArray(data)){
+          if(data.reports && Array.isArray(data.reports)) data = data.reports;
+          else throw new Error('Formato non valido');
+        }
+        data = data.filter(r => r && r.id && r.data);
+        data.forEach(r => { r.materiali = r.materiali || []; });
+        const existing = new Set(reports.map(r=>String(r.id)));
+        let nuovi = 0;
+        data.forEach(r => {
+          if(!existing.has(String(r.id))){ reports.push(r); nuovi++; }
+          else {
+            const idx = reports.findIndex(x=>String(x.id)===String(r.id));
+            if(idx>=0 && (r.ts||'')>=(reports[idx].ts||'')) reports[idx] = r;
+          }
+        });
+        reports.sort((a,b)=>new Date(a.data)-new Date(b.data));
+        saveData();
+        renderStorico();
+        renderRiepilogo();
+        showToast('✓ ' + nuovi + ' nuovi report aggiunti', 'var(--success)');
+        document.getElementById('driveHint').textContent = '✓ Completato: ' + reports.length + ' report totali';
+        document.getElementById('driveHint').style.color = 'var(--success)';
+      } catch(err){
+        showToast('⚠ Errore: ' + err.message,'#ff6b35');
+        console.error('Errore unisci:', err);
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+// ── EMAIL ────────────────────────────────────────────────────────────────
+function renderEmailList(){
+  const c = document.getElementById('settingsEmail');
+  if(!c) return;
+  c.innerHTML = settings.emails.length
+    ? settings.emails.map((e,i)=>`
+        <div class="settings-item">
+          <span class="settings-item-name" style="font-size:12px;">${e}</span>
+          <button class="settings-del" onclick="delEmail(${i})">✕</button>
+        </div>`).join('')
+    : '<div style="font-size:12px;color:var(--text-muted);padding:6px 0">Nessun destinatario.</div>';
+}
+
+function addEmail(){
+  const v = document.getElementById('newEmail').value.trim();
+  if(!v || !v.includes('@')){ showToast('⚠ Email non valida','#ff6b35'); return; }
+  if(!settings.emails.includes(v)){ settings.emails.push(v); saveSettings(); }
+  document.getElementById('newEmail').value = '';
+  renderEmailList();
+  // Aggiorna anche lo script Drive con i nuovi destinatari
+  syncEmailConfig();
+  showToast('✓ Email aggiunta');
+}
+
+function delEmail(i){
+  if(!confirm('Rimuovere "'+settings.emails[i]+'"?')) return;
+  settings.emails.splice(i,1); saveSettings();
+  renderEmailList();
+  syncEmailConfig();
+}
+
+function syncEmailConfig(){
+  // Salva la configurazione email sullo script Drive
+  const scriptUrl = localStorage.getItem('pl_script_url') || '';
+  if(!scriptUrl || !settings.emails.length) return;
+  fetch(scriptUrl, {
+    method: 'POST', mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'saveConfig',
+      filename: 'pesolog_config.json',
+      json: JSON.stringify({ emails: settings.emails })
+    })
+  }).catch(()=>{});
+}
+
+// ── DEPOSITI ─────────────────────────────────────────────────────────────
+
+function openDepIniziale(){
+  document.getElementById('diData').value    = depIniziale.data || new Date().toISOString().split('T')[0];
+  document.getElementById('diSovvallo').value = depIniziale.sovvallo || '';
+  document.getElementById('diInoculo').value  = depIniziale.inoculo  || '';
+  document.getElementById('diOrganico').value = depIniziale.organico || '';
+  document.getElementById('depInizialeOverlay').classList.add('open');
+}
+
+function saveDepIniziale(){
+  const data = document.getElementById('diData').value;
+  if(!data){ showToast('⚠ Inserisci la data','#ff6b35'); return; }
+  depIniziale = {
+    data,
+    sovvallo: parseFloat(document.getElementById('diSovvallo').value)||0,
+    inoculo:  parseFloat(document.getElementById('diInoculo').value)||0,
+    organico: parseFloat(document.getElementById('diOrganico').value)||0
+  };
+  saveDepIniziale_();
+  closeOverlay('depInizialeOverlay');
+  renderDepositi();
+  showToast('✓ Deposito iniziale salvato');
+}
+
+function renderDepInizialeCard(){
+  const el = document.getElementById('depInizialeList');
+  if(!depIniziale.data){
+    el.innerHTML = '<div style="font-size:12px;color:var(--text-muted);padding:6px 0;">Nessun punto di partenza impostato.</div>';
+    return;
+  }
+  const rows = [
+    ['Sovvallo', depIniziale.sovvallo],
+    ['Inoculo',  depIniziale.inoculo],
+    ['Organico', depIniziale.organico]
+  ].filter(([,v])=>v>0);
+
+  el.innerHTML = `<div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">Data: <strong style="color:var(--accent3)">${fmtData(depIniziale.data)}</strong></div>`
+    + rows.map(([n,v])=>`
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);">
+        <span style="font-size:12px;">${n}</span>
+        <span style="font-size:13px;color:var(--accent);font-weight:600;">${fmtPeso(v)}</span>
+      </div>`).join('');
+}
+
+function addConferimento(){
+  const dal = document.getElementById('confDal').value;
+  const al  = document.getElementById('confAl').value;
+  const qta = parseFloat(document.getElementById('confQta').value)||0;
+  if(!dal || !al || qta<=0){ showToast('⚠ Inserisci dal, al e quantità','#ff6b35'); return; }
+  if(dal > al){ showToast('⚠ La data "dal" deve essere prima di "al"','#ff6b35'); return; }
+  conferimenti.push({ id: Date.now(), dal, al, qta });
+  conferimenti.sort((a,b)=>a.dal.localeCompare(b.dal));
+  saveConferimenti();
+  syncToDrive(true);
+  document.getElementById('confDal').value='';
+  document.getElementById('confAl').value='';
+  document.getElementById('confQta').value='';
+  renderDepositi();
+  showToast('✓ Conferimento aggiunto');
+}
+
+function delConferimento(id){
+  if(!confirm('Eliminare questo conferimento?')) return;
+  conferimenti = conferimenti.filter(c=>String(c.id)!==String(id));
+  saveConferimenti();
+  syncToDrive(true);
+  renderDepositi();
+}
+
+function getDepFiltered(){
+  const da = document.getElementById('depDa')?.value||'';
+  const a  = document.getElementById('depA')?.value||'';
+  const r  = reports.filter(x=>{ if(da&&x.data<da)return false; if(a&&x.data>a)return false; return true; });
+  const c  = conferimenti.filter(x=>{
+    if(da && x.al < da) return false;
+    if(a  && x.dal > a) return false;
+    return true;
+  });
+  return { r, c };
+}
+
+function calcDepositi(r, c){
+  let sovvalloProd=0, sovvalloFossa=0, sovvalloCamion=0;
+  let inoculoProd=0, inoculoRiut=0;
+  let orgLavorato=0, vagliatura=0;
+
+  r.forEach(rep=>{
+    (rep.materiali||[]).forEach(m=>{
+      const nl=(m.nome||'').toLowerCase();
+      const da=(m.da||'').trim();
+      const a=(m.a||'').trim();
+      const daL=da.toLowerCase();
+
+      if(nl.includes('sovvallo')){
+        if(daL.includes('50x50')) sovvalloFossa+=(m.peso||0);
+        else sovvalloProd+=(m.peso||0);
+      } else if(nl.includes('vagliatura')){
+        vagliatura+=(m.peso||0);
+      } else if(nl.includes('inoculo')){
+        if(a) inoculoRiut+=(m.peso||0);
+      } else if(nl.includes('organico')){
+        if(!da) orgLavorato+=(m.peso||0);
+      }
+    });
+    // Carico camion sovvallo
+    (rep.camion?.carichi||[]).forEach(c=>{
+      if((c.nome||'').toLowerCase().includes('sovvallo')) sovvalloCamion+=(c.peso||0);
+    });
+  });
+
+  inoculoProd = Math.max(0, vagliatura - sovvalloProd);
+  const confTot = c.reduce((s,x)=>s+x.qta,0); // somma tutti i conferimenti nel periodo
+
+  // Deposito iniziale: viene sempre incluso come base di partenza.
+  // I movimenti dei report vengono calcolati SOLO dopo la data del deposito iniziale,
+  // così da non sottrarre movimenti precedenti che sono già compresi nel valore iniziale.
+  let diSovvallo=0, diInoculo=0, diOrganico=0;
+  if(depIniziale.data){
+    diSovvallo = depIniziale.sovvallo||0;
+    diInoculo  = depIniziale.inoculo||0;
+    diOrganico = depIniziale.organico||0;
+    // Ricalcola i movimenti solo dal giorno DOPO il deposito iniziale in poi
+    // in modo da non sottrarre due volte i movimenti già inclusi nel deposito iniziale
+    const afterDate = depIniziale.data;
+    sovvalloProd=0; sovvalloFossa=0; sovvalloCamion=0;
+    inoculoProd=0; inoculoRiut=0;
+    orgLavorato=0; vagliatura=0;
+    r.filter(rep=>rep.data > afterDate).forEach(rep=>{
+      (rep.materiali||[]).forEach(m=>{
+        const nl=(m.nome||'').toLowerCase();
+        const da=(m.da||'').trim();
+        const a=(m.a||'').trim();
+        const daL=da.toLowerCase();
+        if(nl.includes('sovvallo')){
+          if(daL.includes('50x50')) sovvalloFossa+=(m.peso||0);
+          else sovvalloProd+=(m.peso||0);
+        } else if(nl.includes('vagliatura')){
+          vagliatura+=(m.peso||0);
+        } else if(nl.includes('inoculo')){
+          if(a) inoculoRiut+=(m.peso||0);
+        } else if(nl.includes('organico')){
+          if(!da) orgLavorato+=(m.peso||0);
+        }
+      });
+      (rep.camion?.carichi||[]).forEach(c=>{
+        if((c.nome||'').toLowerCase().includes('sovvallo')) sovvalloCamion+=(c.peso||0);
+      });
+    });
+    inoculoProd = Math.max(0, vagliatura - sovvalloProd);
+    // Conferimenti solo dopo la data deposito iniziale
+    const confDopoIniziale = c.filter(x=>x.dal > afterDate);
+    const confTotDopoIniziale = confDopoIniziale.reduce((s,x)=>s+x.qta,0);
+    return {
+      sovvallo: Math.max(0, diSovvallo + sovvalloProd - sovvalloFossa - sovvalloCamion),
+      inoculo:  Math.max(0, diInoculo  + inoculoProd  - inoculoRiut),
+      organico: Math.max(0, diOrganico + confTotDopoIniziale - orgLavorato),
+      sovvalloProd, sovvalloFossa, sovvalloCamion,
+      inoculoProd, inoculoRiut,
+      orgLavorato, confTot: confTotDopoIniziale, vagliatura,
+      diSovvallo, diInoculo, diOrganico
+    };
+  }
+
+  return {
+    sovvallo: Math.max(0, sovvalloProd - sovvalloFossa - sovvalloCamion),
+    inoculo:  Math.max(0, inoculoProd  - inoculoRiut),
+    organico: Math.max(0, confTot      - orgLavorato),
+    sovvalloProd, sovvalloFossa, sovvalloCamion,
+    inoculoProd, inoculoRiut,
+    orgLavorato, confTot, vagliatura,
+    diSovvallo:0, diInoculo:0, diOrganico:0
+  };
+}
+
+function renderDepositi(){
+  renderDepInizialeCard();
+  const { r, c } = getDepFiltered();
+
+  // Conferimenti list
+  const da = document.getElementById('depDa')?.value||'';
+  const a  = document.getElementById('depA')?.value||'';
+  // Filtra conferimenti per periodo — include se si sovrappone al periodo selezionato
+  const allConf = conferimenti.filter(x=>{
+    if(da && x.al < da) return false;
+    if(a  && x.dal > a) return false;
+    return true;
+  });
+  const depDaStr = document.getElementById('depDa')?.value||'';
+  const depAStr  = document.getElementById('depA')?.value||'';
+  const confTot = allConf.reduce((s,x)=>s+quotaConferimento(x,depDaStr,depAStr),0);
+
+  const cl = document.getElementById('confList');
+  // Mostra solo i conferimenti nel periodo selezionato
+  if(!allConf.length){
+    cl.innerHTML = conferimenti.length
+      ? '<div style="font-size:12px;color:var(--text-muted);padding:8px 0;">Nessun conferimento nel periodo selezionato.</div>'
+      : '<div style="font-size:12px;color:var(--text-muted);padding:8px 0;">Nessun conferimento inserito.</div>';
+  } else {
+    cl.innerHTML = allConf.map(x=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);gap:8px;">
+        <span style="font-size:11px;color:var(--text-dim);white-space:nowrap;">
+          ${fmtDataShort(x.dal)} → ${fmtDataShort(x.al)}
+        </span>
+        <span style="font-size:13px;color:var(--accent);font-weight:600;flex:1;text-align:right;">${fmtPeso(x.qta)}</span>
+        <button onclick="delConferimento('${x.id}')" style="background:none;border:none;color:var(--accent2);cursor:pointer;font-size:14px;flex-shrink:0;">✕</button>
+      </div>`).join('')
+      + (conferimenti.length > allConf.length
+        ? `<div style="font-size:11px;color:var(--text-muted);padding:6px 0;text-align:center;">
+            + ${conferimenti.length - allConf.length} conferimenti fuori dal periodo
+           </div>` : '');
+  }
+
+  document.getElementById('confTotale').textContent = fmtPeso(confTot);
+
+  // Depositi
+  const dep = calcDepositi(r, c);
+  const dl = document.getElementById('depositiList');
+
+  const depRow = (label, val, color) => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);">
+      <span style="font-size:13px;">${label}</span>
+      <span style="font-size:16px;font-weight:800;color:${color};">${fmtPeso(val)}</span>
+    </div>`;
+
+  dl.innerHTML = depRow('🟡 Sovvallo a deposito', dep.sovvallo, 'var(--accent)')
+    + depRow('🟠 Inoculo a deposito', dep.inoculo, '#ffb347')
+    + depRow('🟢 Organico a deposito', dep.organico, 'var(--success)');
+
+  renderPrevisione();
+}
+
+// Calcola la quota proporzionale di un conferimento che cade in un periodo
+function quotaConferimento(x, periDal, periAl){
+  if(!periDal || !periAl) return x.qta;
+  const inizio = new Date(Math.max(new Date(x.dal+'T12:00:00'), new Date(periDal+'T12:00:00')));
+  const fine   = new Date(Math.min(new Date(x.al+'T12:00:00'),  new Date(periAl+'T12:00:00')));
+  const giorniTot     = (new Date(x.al+'T12:00:00') - new Date(x.dal+'T12:00:00')) / (24*3600*1000) + 1;
+  const giorniOverlap = Math.max(0, (fine - inizio) / (24*3600*1000) + 1);
+  return x.qta * (giorniOverlap / giorniTot);
+}
+
+function settimaneTraDate(dal, al){
+  if(!dal || !al) return 1;
+  // Calcola settimane esatte basandosi sui giorni — funziona con qualsiasi periodo (settimanale, mensile, ecc.)
+  const giorni = (new Date(al+'T12:00:00') - new Date(dal+'T12:00:00')) / (24*3600*1000) + 1;
+  return Math.max(0.14, giorni / 7); // minimo 1 giorno
+}
+
+function renderPrevisione(){
+  const mat    = document.getElementById('prevMateriale')?.value||'organico';
+  const lavDal = document.getElementById('prevLavDal')?.value||'';
+  const lavAl  = document.getElementById('prevLavAl')?.value||'';
+  const confDal= document.getElementById('prevConfDal')?.value||'';
+  const confAl = document.getElementById('prevConfAl')?.value||'';
+  const now    = new Date();
+
+  // Deposito attuale
+  const { r, c } = getDepFiltered();
+  const dep = calcDepositi(r, c);
+
+  // Report nel periodo lavorato
+  const rLav = reports.filter(x=>(!lavDal||x.data>=lavDal)&&(!lavAl||x.data<=lavAl));
+  // Conferimenti nel periodo conferimento
+  // Calcola quota proporzionale di ogni conferimento che cade nel periodo selezionato
+  const cConf = conferimenti.filter(x=>(!confDal||x.al>=confDal)&&(!confAl||x.dal<=confAl));
+
+  const nSettLav  = settimaneTraDate(lavDal, lavAl);
+  const nSettConf = settimaneTraDate(confDal, confAl);
+
+  let uscitaTot=0, ingressoTot=0;
+
+  if(mat==='sovvallo'){
+    let sfossa=0, scamion=0, sprod=0;
+    rLav.forEach(rep=>{
+      (rep.materiali||[]).forEach(m=>{
+        const nl=(m.nome||'').toLowerCase();
+        const daL=(m.da||'').toLowerCase();
+        if(nl.includes('sovvallo')){
+          if(daL.includes('50x50')) sfossa+=(m.peso||0);
+          else sprod+=(m.peso||0);
+        }
+      });
+      (rep.camion?.carichi||[]).forEach(c=>{
+        if((c.nome||'').toLowerCase().includes('sovvallo')) scamion+=(c.peso||0);
+      });
+    });
+    uscitaTot   = sfossa + scamion;
+    ingressoTot = sprod;
+
+  } else if(mat==='inoculo'){
+    let vagl=0, sprod=0, iriut=0;
+    rLav.forEach(rep=>{
+      (rep.materiali||[]).forEach(m=>{
+        const nl=(m.nome||'').toLowerCase();
+        const a=(m.a||'').trim();
+        const daL=(m.da||'').toLowerCase();
+        if(nl.includes('vagliatura')) vagl+=(m.peso||0);
+        else if(nl.includes('sovvallo')&&!daL.includes('50x50')) sprod+=(m.peso||0);
+        else if(nl.includes('inoculo')&&a) iriut+=(m.peso||0);
+      });
+    });
+    ingressoTot = Math.max(0, vagl - sprod);
+    uscitaTot   = iriut;
+
+  } else { // organico
+    rLav.forEach(rep=>{
+      (rep.materiali||[]).forEach(m=>{
+        const nl=(m.nome||'').toLowerCase();
+        const da=(m.da||'').trim();
+        if(nl.includes('organico')&&!da) uscitaTot+=(m.peso||0);
+      });
+    });
+    ingressoTot = cConf.reduce((s,x)=>s+quotaConferimento(x,confDal,confAl),0);
+  }
+
+  const uscitaSett   = uscitaTot  / nSettLav;
+  const ingressoSett = ingressoTot / (mat==='organico' ? nSettConf : nSettLav);
+
+  // Deposito attuale
+  let depositoAttuale=0;
+  if(mat==='sovvallo')     depositoAttuale = dep.sovvallo;
+  else if(mat==='inoculo') depositoAttuale = dep.inoculo;
+  else                     depositoAttuale = dep.organico;
+
+  const nettaSett = uscitaSett - ingressoSett; // positivo = smaltimento netto
+
+  const pr = document.getElementById('previsioneResult');
+
+  if(depositoAttuale <= 0){
+    pr.innerHTML = '<div style="color:var(--success);font-size:13px;padding:12px 0;">✓ Nessun deposito da smaltire.</div>';
+    return;
+  }
+  if(nettaSett <= 0){
+    pr.innerHTML = `<div style="color:var(--accent2);font-size:13px;padding:12px 0;">
+      ⚠ Il deposito sta crescendo — l'ingresso (${fmtPeso(ingressoSett)}/sett) supera l'uscita (${fmtPeso(uscitaSett)}/sett).
+    </div>`;
+    return;
+  }
+
+  const settimane = Math.ceil(depositoAttuale / nettaSett);
+  const dataSmaltimento = new Date(now);
+  dataSmaltimento.setDate(now.getDate() + settimane*7);
+
+  pr.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:12px;">
+        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Deposito attuale</div>
+        <div style="font-size:18px;font-weight:800;color:var(--accent);">${fmtPeso(depositoAttuale)}</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:12px;">
+        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Smaltimento netto/sett</div>
+        <div style="font-size:18px;font-weight:800;color:var(--success);">${fmtPeso(nettaSett)}</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:12px;">
+        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Ingresso medio/sett</div>
+        <div style="font-size:16px;font-weight:700;color:#ffb347;">${fmtPeso(ingressoSett)}</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:12px;">
+        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Uscita media/sett</div>
+        <div style="font-size:16px;font-weight:700;color:var(--accent3);">${fmtPeso(uscitaSett)}</div>
+      </div>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--accent);border-radius:var(--rs);padding:14px;text-align:center;">
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">Stima smaltimento completo</div>
+      <div style="font-size:22px;font-weight:800;color:var(--accent);">${settimane} settimane</div>
+      <div style="font-size:12px;color:var(--text-dim);margin-top:4px;">
+        entro ${dataSmaltimento.toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'})}
+      </div>
+    </div>
+    <div style="font-size:10px;color:var(--text-muted);margin-top:8px;text-align:center;">
+      Lavorato: ${nSettLav} sett. · Conferito: ${nSettConf} sett.
+    </div>`;
+  renderObiettivoSuggestion();
+  renderSimulatore();
+}
+
+// ── OBIETTIVO SMALTIMENTO ────────────────────────────────────────────────
+function renderObiettivoSuggestion(){
+  const dataObj = document.getElementById('prevObiettivoData')?.value;
+  const mat     = document.getElementById('prevMateriale')?.value||'organico';
+  const pr      = document.getElementById('obiettivoResult');
+
+  if(!dataObj){ pr.innerHTML=''; return; }
+
+  const now = new Date();
+  const target = new Date(dataObj+'T12:00:00');
+  if(target <= now){
+    pr.innerHTML = '<div style="color:var(--accent2);font-size:12px;padding:8px 0;">⚠ La data obiettivo deve essere nel futuro.</div>';
+    return;
+  }
+
+  const settimaneDisponibili = Math.max(1, Math.round((target - now) / (7*24*3600*1000)));
+
+  // Deposito attuale
+  const { r, c } = getDepFiltered();
+  const dep = calcDepositi(r, c);
+  let depositoAttuale=0;
+  if(mat==='sovvallo')     depositoAttuale = dep.sovvallo;
+  else if(mat==='inoculo') depositoAttuale = dep.inoculo;
+  else                     depositoAttuale = dep.organico;
+
+  if(depositoAttuale <= 0){
+    pr.innerHTML = '<div style="color:var(--success);font-size:12px;padding:8px 0;">✓ Nessun deposito da smaltire.</div>';
+    return;
+  }
+
+  // Leggi medie attuali dalla previsione
+  const lavDal  = document.getElementById('prevLavDal')?.value||'';
+  const lavAl   = document.getElementById('prevLavAl')?.value||'';
+  const confDal = document.getElementById('prevConfDal')?.value||'';
+  const confAl  = document.getElementById('prevConfAl')?.value||'';
+  const nSettLav  = settimaneTraDate(lavDal, lavAl);
+  const nSettConf = settimaneTraDate(confDal, confAl);
+
+  const rLav  = reports.filter(x=>(!lavDal||x.data>=lavDal)&&(!lavAl||x.data<=lavAl));
+  // Calcola quota proporzionale di ogni conferimento che cade nel periodo selezionato
+  const cConf = conferimenti.filter(x=>(!confDal||x.al>=confDal)&&(!confAl||x.dal<=confAl));
+
+  let uscitaTot=0, ingressoTot=0;
+  if(mat==='sovvallo'){
+    let sfossa=0, scamion=0, sprod=0;
+    rLav.forEach(rep=>{
+      (rep.materiali||[]).forEach(m=>{
+        const nl=(m.nome||'').toLowerCase();
+        const daL=(m.da||'').toLowerCase();
+        if(nl.includes('sovvallo')){ if(daL.includes('50x50')) sfossa+=(m.peso||0); else sprod+=(m.peso||0); }
+      });
+      (rep.camion?.carichi||[]).forEach(c=>{ if((c.nome||'').toLowerCase().includes('sovvallo')) scamion+=(c.peso||0); });
+    });
+    uscitaTot=sfossa+scamion; ingressoTot=sprod;
+  } else if(mat==='inoculo'){
+    let vagl=0, sprod=0, iriut=0;
+    rLav.forEach(rep=>{
+      (rep.materiali||[]).forEach(m=>{
+        const nl=(m.nome||'').toLowerCase();
+        const a=(m.a||'').trim(); const daL=(m.da||'').toLowerCase();
+        if(nl.includes('vagliatura')) vagl+=(m.peso||0);
+        else if(nl.includes('sovvallo')&&!daL.includes('50x50')) sprod+=(m.peso||0);
+        else if(nl.includes('inoculo')&&a) iriut+=(m.peso||0);
+      });
+    });
+    ingressoTot=Math.max(0,vagl-sprod); uscitaTot=iriut;
+  } else {
+    rLav.forEach(rep=>{
+      (rep.materiali||[]).forEach(m=>{
+        const nl=(m.nome||'').toLowerCase(); const da=(m.da||'').trim();
+        if(nl.includes('organico')&&!da) uscitaTot+=(m.peso||0);
+      });
+    });
+    ingressoTot=cConf.reduce((s,x)=>s+quotaConferimento(x,confDal,confAl),0);
+  }
+
+  const uscitaSett   = uscitaTot  / nSettLav;
+  const ingressoSett = ingressoTot / (mat==='organico' ? nSettConf : nSettLav);
+  const nettaAttuale = uscitaSett - ingressoSett;
+
+  // Smaltimento netto necessario per settimana
+  const nettaNecessaria = depositoAttuale / settimaneDisponibili;
+  // Quanto devo aumentare l'uscita (mantenendo ingresso costante)
+  const aumentoUscita = Math.max(0, nettaNecessaria - nettaAttuale);
+  // Quanto devo ridurre l'ingresso (mantenendo uscita costante)
+  const riduzioneIngresso = Math.max(0, nettaNecessaria - nettaAttuale);
+  // Nuova uscita necessaria
+  const nuovaUscita = uscitaSett + aumentoUscita;
+  // Nuovo ingresso necessario
+  const nuovoIngresso = Math.max(0, ingressoSett - riduzioneIngresso);
+
+  const matLabel = mat==='sovvallo'?'Sovvallo':mat==='inoculo'?'Inoculo':'Organico';
+  const dataFmt = target.toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'});
+
+  pr.innerHTML = `
+    <div style="background:var(--surface2);border:1px solid var(--accent);border-radius:var(--r);padding:14px;">
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">
+        Per smaltire <strong style="color:var(--accent)">${fmtPeso(depositoAttuale)}</strong> di ${matLabel}
+        entro il <strong style="color:var(--accent)">${dataFmt}</strong>
+        (${settimaneDisponibili} settimane) ti servono <strong>${fmtPeso(nettaNecessaria)}/sett</strong> di smaltimento netto.
+      </div>
+
+      ${nettaAttuale >= nettaNecessaria ? `
+        <div style="color:var(--success);font-size:13px;padding:8px 0;">
+          ✓ Con i ritmi attuali (${fmtPeso(nettaAttuale)}/sett netti) ce la fai già!
+        </div>` : `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div style="background:var(--surface);border:1px solid #47c9ff40;border-radius:var(--rs);padding:12px;">
+            <div style="font-size:10px;color:var(--accent3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">
+              Opzione A — Aumenta uscita
+            </div>
+            <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;">Lavora ogni settimana:</div>
+            <div style="font-size:17px;font-weight:800;color:var(--accent3);">${fmtPeso(nuovaUscita)}</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">+${fmtPeso(aumentoUscita)}/sett rispetto ad ora</div>
+          </div>
+          <div style="background:var(--surface);border:1px solid #ffb34740;border-radius:var(--rs);padding:12px;">
+            <div style="font-size:10px;color:#ffb347;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">
+              Opzione B — Riduci ingresso
+            </div>
+            <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;">Conferisci ogni settimana:</div>
+            <div style="font-size:17px;font-weight:800;color:#ffb347;">${nuovoIngresso>0?fmtPeso(nuovoIngresso):'0 (blocca ingresso)'}</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">-${fmtPeso(riduzioneIngresso)}/sett rispetto ad ora</div>
+          </div>
+        </div>`}
+    </div>`;
+}
+
+// ── SIMULATORE ───────────────────────────────────────────────────────────
+function renderSimulatore(){
+  const mat        = document.getElementById('prevMateriale')?.value||'organico';
+  const dataObj    = document.getElementById('prevObiettivoData')?.value||'';
+  const simIngStr  = document.getElementById('simIngresso')?.value;
+  const simUscStr  = document.getElementById('simUscita')?.value;
+  const pr         = document.getElementById('simulatoreResult');
+
+  // Deposito attuale
+  const { r, c } = getDepFiltered();
+  const dep = calcDepositi(r, c);
+  let depositoAttuale=0;
+  if(mat==='sovvallo')     depositoAttuale = dep.sovvallo;
+  else if(mat==='inoculo') depositoAttuale = dep.inoculo;
+  else                     depositoAttuale = dep.organico;
+
+  if(depositoAttuale <= 0){
+    pr.innerHTML='<div style="color:var(--success);font-size:12px;padding:8px 0;">✓ Nessun deposito da smaltire.</div>';
+    return;
+  }
+
+  // Leggi medie reali dalla previsione
+  const lavDal  = document.getElementById('prevLavDal')?.value||'';
+  const lavAl   = document.getElementById('prevLavAl')?.value||'';
+  const confDal = document.getElementById('prevConfDal')?.value||'';
+  const confAl  = document.getElementById('prevConfAl')?.value||'';
+  const nSettLav  = settimaneTraDate(lavDal, lavAl);
+  const nSettConf = settimaneTraDate(confDal, confAl);
+
+  const rLav  = reports.filter(x=>(!lavDal||x.data>=lavDal)&&(!lavAl||x.data<=lavAl));
+  const cConf = conferimenti.filter(x=>(!confDal||x.al>=confDal)&&(!confAl||x.dal<=confAl));
+
+  let uscitaTotReale=0, ingressoTotReale=0;
+  if(mat==='sovvallo'){
+    let sfossa=0, scamion=0, sprod=0;
+    rLav.forEach(rep=>{
+      (rep.materiali||[]).forEach(m=>{
+        const nl=(m.nome||'').toLowerCase(); const daL=(m.da||'').toLowerCase();
+        if(nl.includes('sovvallo')){ if(daL.includes('50x50')) sfossa+=(m.peso||0); else sprod+=(m.peso||0); }
+      });
+      (rep.camion?.carichi||[]).forEach(c=>{ if((c.nome||'').toLowerCase().includes('sovvallo')) scamion+=(c.peso||0); });
+    });
+    uscitaTotReale=sfossa+scamion; ingressoTotReale=sprod;
+  } else if(mat==='inoculo'){
+    let vagl=0, sprod=0, iriut=0;
+    rLav.forEach(rep=>{
+      (rep.materiali||[]).forEach(m=>{
+        const nl=(m.nome||'').toLowerCase(); const a=(m.a||'').trim(); const daL=(m.da||'').toLowerCase();
+        if(nl.includes('vagliatura')) vagl+=(m.peso||0);
+        else if(nl.includes('sovvallo')&&!daL.includes('50x50')) sprod+=(m.peso||0);
+        else if(nl.includes('inoculo')&&a) iriut+=(m.peso||0);
+      });
+    });
+    ingressoTotReale=Math.max(0,vagl-sprod); uscitaTotReale=iriut;
+  } else {
+    rLav.forEach(rep=>{
+      (rep.materiali||[]).forEach(m=>{
+        const nl=(m.nome||'').toLowerCase(); const da=(m.da||'').trim();
+        if(nl.includes('organico')&&!da) uscitaTotReale+=(m.peso||0);
+      });
+    });
+    ingressoTotReale=cConf.reduce((s,x)=>s+quotaConferimento(x,confDal,confAl),0);
+  }
+
+  const uscitaReale   = uscitaTotReale  / nSettLav;
+  const ingressoReale = ingressoTotReale / (mat==='organico' ? nSettConf : nSettLav);
+
+  // Usa valori ipoteticci se inseriti, altrimenti reali
+  const uscitaSim   = simUscStr   ? parseFloat(simUscStr)*1000   : uscitaReale;
+  const ingressoSim = simIngStr   ? parseFloat(simIngStr)*1000   : ingressoReale;
+  const nettaSim    = uscitaSim - ingressoSim;
+
+  const now = new Date();
+  const matLabel = mat==='sovvallo'?'Sovvallo':mat==='inoculo'?'Inoculo':'Organico';
+
+  // Settimane necessarie con i valori simulati
+  let settimaneSimulate = nettaSim > 0 ? Math.ceil(depositoAttuale / nettaSim) : null;
+  let dataSimStr = '';
+  if(settimaneSimulate){
+    const dataSim = new Date(now);
+    dataSim.setDate(now.getDate() + settimaneSimulate*7);
+    dataSimStr = dataSim.toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'});
+  }
+
+  // Confronto con scenario reale
+  const nettaReale = uscitaReale - ingressoReale;
+  const settimaneReali = nettaReale > 0 ? Math.ceil(depositoAttuale / nettaReale) : null;
+
+  const deltaIngresso = ingressoSim - ingressoReale;
+  const deltaUscita   = uscitaSim   - uscitaReale;
+
+  const fmtDelta = (v) => {
+    const t = v/1000;
+    const sign = t>=0 ? '+' : '';
+    return sign + t.toFixed(2).replace('.',',') + ' t/sett';
+  };
+
+  pr.innerHTML = `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:14px;margin-bottom:10px;">
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;text-align:center;">Scenario ipotetico vs reale — ${matLabel}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:10px;">
+          <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Ingresso</div>
+          <div style="font-size:16px;font-weight:800;color:#ffb347;">${(ingressoSim/1000).toFixed(2).replace('.',',')} t/sett</div>
+          ${deltaIngresso!==0?`<div style="font-size:10px;color:${deltaIngresso<0?'var(--success)':'var(--accent2)'};margin-top:2px;">${fmtDelta(deltaIngresso)} vs reale</div>`:''}
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:10px;">
+          <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Uscita</div>
+          <div style="font-size:16px;font-weight:800;color:var(--accent3);">${(uscitaSim/1000).toFixed(2).replace('.',',')} t/sett</div>
+          ${deltaUscita!==0?`<div style="font-size:10px;color:${deltaUscita>0?'var(--success)':'var(--accent2)'};margin-top:2px;">${fmtDelta(deltaUscita)} vs reale</div>`:''}
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:10px;">
+          <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Smaltimento netto</div>
+          <div style="font-size:16px;font-weight:800;color:${nettaSim>0?'var(--success)':'var(--accent2)'};">${(nettaSim/1000).toFixed(2).replace('.',',')} t/sett</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:10px;">
+          <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Deposito attuale</div>
+          <div style="font-size:16px;font-weight:800;color:var(--accent);">${(depositoAttuale/1000).toFixed(2).replace('.',',')} t</div>
+        </div>
+      </div>
+      ${nettaSim <= 0
+        ? `<div style="background:#1a0f08;border:1px solid var(--accent2);border-radius:var(--rs);padding:12px;text-align:center;color:var(--accent2);font-size:13px;">
+            ⚠ Con questi valori il deposito sta crescendo — l'ingresso supera l'uscita.
+           </div>`
+        : `<div style="background:var(--surface);border:1px solid var(--accent);border-radius:var(--rs);padding:12px;text-align:center;">
+            <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;">Stima smaltimento con scenario ipotetico</div>
+            <div style="font-size:22px;font-weight:800;color:var(--accent);">${settimaneSimulate} settimane</div>
+            <div style="font-size:12px;color:var(--text-dim);margin-top:4px;">entro ${dataSimStr}</div>
+            ${settimaneReali ? `<div style="font-size:11px;color:var(--text-muted);margin-top:6px;">
+              Scenario reale: ${settimaneReali} settimane — 
+              <span style="color:${settimaneSimulate<settimaneReali?'var(--success)':'var(--accent2)'};">
+                ${settimaneSimulate<settimaneReali?'▲ '+( settimaneReali-settimaneSimulate)+' sett. prima':'▼ '+(settimaneSimulate-settimaneReali)+' sett. dopo'}
+              </span>
+            </div>` : ''}
+          </div>`
+      }
+    </div>`;
+}
+
+// ── STAMPA PREVISIONE ────────────────────────────────────────────────────
+function stampaPrevisione(){
+  const mat      = document.getElementById('prevMateriale')?.value||'organico';
+  const lavDal   = document.getElementById('prevLavDal')?.value||'';
+  const lavAl    = document.getElementById('prevLavAl')?.value||'';
+  const confDal  = document.getElementById('prevConfDal')?.value||'';
+  const confAl   = document.getElementById('prevConfAl')?.value||'';
+  const dataObj  = document.getElementById('prevObiettivoData')?.value||'';
+  const simIngStr= document.getElementById('simIngresso')?.value||'';
+  const simUscStr= document.getElementById('simUscita')?.value||'';
+  const now      = new Date();
+  const matLabel = mat==='sovvallo'?'Sovvallo':mat==='inoculo'?'Inoculo':'Organico';
+
+  // Deposito attuale
+  const { r, c } = getDepFiltered();
+  const dep = calcDepositi(r, c);
+  let depositoAttuale=0;
+  if(mat==='sovvallo')     depositoAttuale = dep.sovvallo;
+  else if(mat==='inoculo') depositoAttuale = dep.inoculo;
+  else                     depositoAttuale = dep.organico;
+
+  // Medie reali
+  const nSettLav  = settimaneTraDate(lavDal, lavAl);
+  const nSettConf = settimaneTraDate(confDal, confAl);
+  const rLav  = reports.filter(x=>(!lavDal||x.data>=lavDal)&&(!lavAl||x.data<=lavAl));
+  const cConf = conferimenti.filter(x=>(!confDal||x.al>=confDal)&&(!confAl||x.dal<=confAl));
+
+  let uscitaTotReale=0, ingressoTotReale=0;
+  if(mat==='sovvallo'){
+    let sfossa=0,scamion=0,sprod=0;
+    rLav.forEach(rep=>{
+      (rep.materiali||[]).forEach(m=>{
+        const nl=(m.nome||'').toLowerCase(),daL=(m.da||'').toLowerCase();
+        if(nl.includes('sovvallo')){ if(daL.includes('50x50')) sfossa+=(m.peso||0); else sprod+=(m.peso||0); }
+      });
+      (rep.camion?.carichi||[]).forEach(c=>{ if((c.nome||'').toLowerCase().includes('sovvallo')) scamion+=(c.peso||0); });
+    });
+    uscitaTotReale=sfossa+scamion; ingressoTotReale=sprod;
+  } else if(mat==='inoculo'){
+    let vagl=0,sprod=0,iriut=0;
+    rLav.forEach(rep=>{
+      (rep.materiali||[]).forEach(m=>{
+        const nl=(m.nome||'').toLowerCase(),a=(m.a||'').trim(),daL=(m.da||'').toLowerCase();
+        if(nl.includes('vagliatura')) vagl+=(m.peso||0);
+        else if(nl.includes('sovvallo')&&!daL.includes('50x50')) sprod+=(m.peso||0);
+        else if(nl.includes('inoculo')&&a) iriut+=(m.peso||0);
+      });
+    });
+    ingressoTotReale=Math.max(0,vagl-sprod); uscitaTotReale=iriut;
+  } else {
+    rLav.forEach(rep=>{
+      (rep.materiali||[]).forEach(m=>{
+        const nl=(m.nome||'').toLowerCase(),da=(m.da||'').trim();
+        if(nl.includes('organico')&&!da) uscitaTotReale+=(m.peso||0);
+      });
+    });
+    ingressoTotReale=cConf.reduce((s,x)=>s+quotaConferimento(x,confDal,confAl),0);
+  }
+
+  const uscitaReale   = uscitaTotReale / nSettLav;
+  const ingressoReale = ingressoTotReale / (mat==='organico' ? nSettConf : nSettLav);
+  const nettaReale    = uscitaReale - ingressoReale;
+  const settReali     = nettaReale > 0 ? Math.ceil(depositoAttuale / nettaReale) : null;
+  const dataReale     = settReali ? new Date(now.getTime() + settReali*7*24*3600*1000) : null;
+
+  const toTon = v => (v/1000).toFixed(2).replace('.',',')+' t';
+  const fmtDt = d => d ? new Date(d+'T12:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}) : '—';
+  const nowStr = now.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+
+  // Sezione obiettivo
+  let obiettivoHTML = '';
+  if(dataObj){
+    const target = new Date(dataObj+'T12:00:00');
+    const settDisp = Math.max(1, Math.round((target - now)/(7*24*3600*1000)));
+    const nettaNec = depositoAttuale / settDisp;
+    const aumentoUscita = Math.max(0, nettaNec - nettaReale);
+    const riduzioneIngr = Math.max(0, nettaNec - nettaReale);
+    const nuovaUscita   = uscitaReale + aumentoUscita;
+    const nuovoIngresso = Math.max(0, ingressoReale - riduzioneIngr);
+
+    obiettivoHTML = `
+      <h3 style="font-size:13px;text-transform:uppercase;letter-spacing:1px;margin:20px 0 8px;color:#333;">🎯 Obiettivo entro il ${fmtDt(dataObj)} (${settDisp} settimane)</h3>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px;">
+        <tr style="background:#f0f0f0;">
+          <th style="padding:8px 12px;border:1px solid #ddd;text-align:left;">Smaltimento netto necessario</th>
+          <td style="padding:8px 12px;border:1px solid #ddd;font-weight:bold;">${toTon(nettaNec)}/sett</td>
+        </tr>
+        <tr>
+          <th style="padding:8px 12px;border:1px solid #ddd;text-align:left;background:#f9f9f9;">Opzione A — Lavorare ogni settimana</th>
+          <td style="padding:8px 12px;border:1px solid #ddd;font-weight:bold;color:#0077aa;">${toTon(nuovaUscita)}/sett (+${toTon(aumentoUscita)} vs attuale)</td>
+        </tr>
+        <tr>
+          <th style="padding:8px 12px;border:1px solid #ddd;text-align:left;background:#f9f9f9;">Opzione B — Conferire al massimo</th>
+          <td style="padding:8px 12px;border:1px solid #ddd;font-weight:bold;color:#e07000;">${nuovoIngresso>0?toTon(nuovoIngresso)+'/sett (-'+toTon(riduzioneIngr)+' vs attuale)':'bloccare conferimento'}</td>
+        </tr>
+      </table>`;
+  }
+
+  // Sezione simulatore
+  let simulatoreHTML = '';
+  if(simIngStr || simUscStr){
+    const uscitaSim   = simUscStr ? parseFloat(simUscStr)*1000 : uscitaReale;
+    const ingressoSim = simIngStr ? parseFloat(simIngStr)*1000 : ingressoReale;
+    const nettaSim    = uscitaSim - ingressoSim;
+    const settSim     = nettaSim > 0 ? Math.ceil(depositoAttuale / nettaSim) : null;
+    const dataSim     = settSim ? new Date(now.getTime() + settSim*7*24*3600*1000) : null;
+
+    simulatoreHTML = `
+      <h3 style="font-size:13px;text-transform:uppercase;letter-spacing:1px;margin:20px 0 8px;color:#333;">🧮 Scenario ipotetico</h3>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px;">
+        <thead><tr style="background:#1a1a1a;color:#fff;">
+          <th style="padding:8px 12px;border:1px solid #333;text-align:left;">Voce</th>
+          <th style="padding:8px 12px;border:1px solid #333;text-align:right;">Reale</th>
+          <th style="padding:8px 12px;border:1px solid #333;text-align:right;">Ipotetico</th>
+        </tr></thead>
+        <tbody>
+          <tr><td style="padding:8px 12px;border:1px solid #ddd;background:#f9f9f9;">Ingresso settimanale</td>
+            <td style="padding:8px 12px;border:1px solid #ddd;text-align:right;">${toTon(ingressoReale)}/sett</td>
+            <td style="padding:8px 12px;border:1px solid #ddd;text-align:right;font-weight:bold;">${toTon(ingressoSim)}/sett</td></tr>
+          <tr><td style="padding:8px 12px;border:1px solid #ddd;background:#f9f9f9;">Uscita settimanale</td>
+            <td style="padding:8px 12px;border:1px solid #ddd;text-align:right;">${toTon(uscitaReale)}/sett</td>
+            <td style="padding:8px 12px;border:1px solid #ddd;text-align:right;font-weight:bold;">${toTon(uscitaSim)}/sett</td></tr>
+          <tr><td style="padding:8px 12px;border:1px solid #ddd;background:#f9f9f9;">Smaltimento netto</td>
+            <td style="padding:8px 12px;border:1px solid #ddd;text-align:right;">${toTon(nettaReale)}/sett</td>
+            <td style="padding:8px 12px;border:1px solid #ddd;text-align:right;font-weight:bold;">${toTon(nettaSim)}/sett</td></tr>
+          <tr style="background:#f0f0f0;"><td style="padding:8px 12px;border:1px solid #ddd;font-weight:bold;">Stima smaltimento</td>
+            <td style="padding:8px 12px;border:1px solid #ddd;text-align:right;font-weight:bold;">${settReali?settReali+' sett. ('+dataReale.toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'})+')':'deposito crescente'}</td>
+            <td style="padding:8px 12px;border:1px solid #ddd;text-align:right;font-weight:bold;color:${settSim&&settReali&&settSim<settReali?'green':'#c00'}">${settSim?settSim+' sett. ('+dataSim.toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'})+')':'deposito crescente'}</td></tr>
+        </tbody>
+      </table>`;
+  }
+
+  // Deposito iniziale
+  const depIniHTML = depIniziale.data ? `
+    <p style="font-size:12px;color:#666;">Punto di partenza: <strong>${fmtDt(depIniziale.data)}</strong> —
+      Sovvallo: ${toTon(depIniziale.sovvallo||0)} |
+      Inoculo: ${toTon(depIniziale.inoculo||0)} |
+      Organico: ${toTon(depIniziale.organico||0)}
+    </p>` : '';
+
+  document.getElementById('printArea').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;border-bottom:2px solid #000;padding-bottom:12px;">
+      <div>
+        <div style="font-size:22px;font-weight:800;letter-spacing:-1px;">PESO<span style="color:#666">LOG</span></div>
+        <div style="font-size:14px;font-weight:700;margin-top:4px;">Report Previsione Smaltimento — ${matLabel}</div>
+      </div>
+      <div style="text-align:right;font-size:12px;color:#666;">
+        <div>Stampato: ${nowStr}</div>
+        <div>Materiale lavorato: ${fmtDt(lavDal)} → ${fmtDt(lavAl)}</div>
+        ${mat==='organico'?`<div>Conferimento: ${fmtDt(confDal)} → ${fmtDt(confAl)}</div>`:''}
+      </div>
+    </div>
+
+    ${depIniHTML}
+
+    <h3 style="font-size:13px;text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px;color:#333;">📦 Situazione depositi correnti</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px;">
+      <tr style="background:#f0f0f0;">
+        <th style="padding:8px 12px;border:1px solid #ddd;text-align:left;">Materiale</th>
+        <th style="padding:8px 12px;border:1px solid #ddd;text-align:right;">A deposito</th>
+      </tr>
+      <tr><td style="padding:8px 12px;border:1px solid #ddd;background:#f9f9f9;">Sovvallo</td><td style="padding:8px 12px;border:1px solid #ddd;text-align:right;font-weight:bold;">${toTon(dep.sovvallo)}</td></tr>
+      <tr><td style="padding:8px 12px;border:1px solid #ddd;background:#f9f9f9;">Inoculo</td><td style="padding:8px 12px;border:1px solid #ddd;text-align:right;font-weight:bold;">${toTon(dep.inoculo)}</td></tr>
+      <tr><td style="padding:8px 12px;border:1px solid #ddd;background:#f9f9f9;">Organico</td><td style="padding:8px 12px;border:1px solid #ddd;text-align:right;font-weight:bold;">${toTon(dep.organico)}</td></tr>
+    </table>
+
+    <h3 style="font-size:13px;text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px;color:#333;">📈 Previsione smaltimento — ${matLabel}</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px;">
+      <tr><td style="padding:8px 12px;border:1px solid #ddd;background:#f9f9f9;">Deposito attuale</td><td style="padding:8px 12px;border:1px solid #ddd;text-align:right;font-weight:bold;">${toTon(depositoAttuale)}</td></tr>
+      <tr><td style="padding:8px 12px;border:1px solid #ddd;background:#f9f9f9;">Ingresso medio settimanale</td><td style="padding:8px 12px;border:1px solid #ddd;text-align:right;font-weight:bold;">${toTon(ingressoReale)}/sett</td></tr>
+      <tr><td style="padding:8px 12px;border:1px solid #ddd;background:#f9f9f9;">Uscita media settimanale</td><td style="padding:8px 12px;border:1px solid #ddd;text-align:right;font-weight:bold;">${toTon(uscitaReale)}/sett</td></tr>
+      <tr><td style="padding:8px 12px;border:1px solid #ddd;background:#f9f9f9;">Smaltimento netto settimanale</td><td style="padding:8px 12px;border:1px solid #ddd;text-align:right;font-weight:bold;">${toTon(nettaReale)}/sett</td></tr>
+      <tr style="background:#f0f0f0;">
+        <td style="padding:8px 12px;border:1px solid #ddd;font-weight:bold;">Stima smaltimento completo</td>
+        <td style="padding:8px 12px;border:1px solid #ddd;text-align:right;font-weight:bold;">
+          ${settReali ? settReali+' settimane — entro '+dataReale.toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'}) : '⚠ Deposito in crescita'}
+        </td>
+      </tr>
+    </table>
+
+    ${obiettivoHTML}
+    ${simulatoreHTML}
+  `;
+
+  window.print();
+}
+
+// ── EXPORT MENU ──────────────────────────────────────────────────────────
+function toggleExportMenu(){
+  const menu = document.getElementById('exportMenu');
+  const toggle = document.getElementById('exportToggle');
+  menu.classList.toggle('open');
+  toggle.classList.toggle('open');
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────
+function fmtK(n){ return n>=1000?(n/1000).toFixed(1).replace('.',',')+'k':String(Math.round(n)); }
+function fmtPeso(n){ return n>=1000?(n/1000).toFixed(2).replace('.',',')+' t':Math.round(n)+' kg'; }
+function fmtData(d){ return new Date(d+'T12:00:00').toLocaleDateString('it-IT',{weekday:'short',day:'numeric',month:'short',year:'numeric'}); }
+function fmtDataShort(d){ return new Date(d+'T12:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'2-digit'}); }
+</script>
+</body>
+</html>
