@@ -254,7 +254,7 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
     <div class="hdr-date" id="hdrDate"></div>
   </div>
   <div class="hdr-right">
-    <button class="hdr-menu-btn" onclick="toggleHdrMenu(event)">
+    <button class="hdr-menu-btn" id="hdrMenuBtn">
       <div class="hdr-user" id="hdrUser"></div>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
@@ -844,6 +844,10 @@ function showApp() {
   if (isAdmin) document.getElementById('settingsBtn').style.display = 'flex';
   initApp();
   applyRoleUI();
+  document.getElementById('hdrMenuBtn').addEventListener('click', function(e) {
+    e.stopPropagation();
+    document.getElementById('hdrDropdown').classList.toggle('open');
+  });
   // Mostra il ruolo nel menu header
   const roleLabels = {admin:'Admin',operatore:'Operatore',supervisore:'Supervisore',solo_inserimento:'Solo inserimento'};
   const roleEl = document.createElement('div');
@@ -1126,6 +1130,19 @@ function resetForm() {
   document.getElementById('sect-ammendante').style.display='none';
   addMaterial();
 }
+
+// ── HEADER MENU ──
+function toggleHdrMenu(e) {
+  e.stopPropagation();
+  document.getElementById("hdrDropdown").classList.toggle("open");
+}
+function closeHdrMenu() {
+  document.getElementById("hdrDropdown").classList.remove("open");
+}
+document.addEventListener("click", e => {
+  const dd = document.getElementById("hdrDropdown");
+  if (dd && !dd.contains(e.target)) dd.classList.remove("open");
+});
 
 // ── TOAST ─────────────────────────────────────────────────────────────
 function showToast(msg, color) {
