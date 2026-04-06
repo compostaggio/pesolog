@@ -91,7 +91,8 @@ body{font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);min-
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:14px;}
 .card-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--accent);margin-bottom:14px;}
 label{display:block;font-size:11px;color:var(--text-dim);margin-bottom:5px;}
-input,select,textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:11px 13px;color:var(--text);font-family:'DM Mono',monospace;font-size:14px;outline:none;transition:border-color .2s;margin-bottom:12px;-webkit-appearance:none;}
+input,textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:11px 13px;color:var(--text);font-family:'DM Mono',monospace;font-size:16px;outline:none;transition:border-color .2s;margin-bottom:12px;-webkit-appearance:none;}
+select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:11px 13px;color:var(--text);font-family:'DM Mono',monospace;font-size:16px;outline:none;transition:border-color .2s;margin-bottom:12px;}
 input:focus,select:focus,textarea:focus{border-color:var(--accent);}
 select option{background:var(--surface2);}
 textarea{resize:vertical;min-height:72px;margin-bottom:0;}
@@ -207,6 +208,21 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
 .sect-divider{height:1px;background:var(--border);margin:14px 0;}
 .saving-indicator{position:fixed;bottom:80px;right:12px;background:var(--surface2);border:1px solid var(--border);border-radius:100px;padding:6px 12px;font-size:10px;color:var(--text-dim);z-index:100;opacity:0;transition:opacity .3s;}
 .saving-indicator.show{opacity:1;}
+
+/* ── MOBILE ── */
+@media (max-width: 480px) {
+  .mat-row { display: flex !important; flex-wrap: wrap; gap: 6px; }
+  .mat-row input { flex: 1 1 calc(50% - 3px); min-width: 80px; }
+  .mat-row input:first-child { flex: 1 1 100%; }
+  .mat-row .rm-btn { flex-shrink: 0; align-self: flex-start; margin-top: 2px; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .hdr { padding: 10px 14px; }
+  .hdr-logo { font-size: 16px; }
+  .page { padding: 12px; }
+  .card { padding: 14px; }
+  input, select, textarea { font-size: 16px !important; }
+}
+
 @media print{
   body{background:#fff!important;color:#000!important;padding:0!important;}
   .nav,.hdr,.overlay,.page{display:none!important;}
@@ -1029,10 +1045,10 @@ function addMaterial() {
   div.className='mat-row'; div.id=id;
   div.style.cssText='display:grid;grid-template-columns:2fr 1fr 1fr 1fr 34px;gap:6px;align-items:center;margin-bottom:8px;';
   div.innerHTML=`
-    <input type="text" class="mn" placeholder="Materiale" list="dl_mat" style="margin-bottom:0;">
-    <input type="number" class="mp" placeholder="kg" min="0" step="0.1" style="margin-bottom:0;">
-    <input type="text" class="mda" placeholder="Da" list="dl_luoghi" style="margin-bottom:0;">
-    <input type="text" class="ma" placeholder="A" list="dl_luoghi" style="margin-bottom:0;">
+    <input type="text" class="mn" placeholder="Materiale" list="dl_mat" style="margin-bottom:0;" autocomplete="off">
+    <input type="number" class="mp" placeholder="kg" min="0" step="1" inputmode="numeric" style="margin-bottom:0;">
+    <input type="text" class="mda" placeholder="Da" list="dl_luoghi" style="margin-bottom:0;" autocomplete="off">
+    <input type="text" class="ma" placeholder="A" list="dl_luoghi" style="margin-bottom:0;" autocomplete="off">
     <button class="rm-btn" onclick="removeMat('${id}')">✕</button>`;
   document.getElementById('materialList').appendChild(div);
 }
@@ -1048,7 +1064,7 @@ function addCamionRow() {
   const div=document.createElement('div');
   div.className='mat-row'; div.id=id;
   div.style.cssText='display:grid;grid-template-columns:2fr 1fr 1fr 34px;gap:6px;align-items:center;margin-bottom:8px;';
-  div.innerHTML=`<input type="text" class="cn" placeholder="Tipo carico" list="dl_mat" style="margin-bottom:0;"><input type="number" class="cp" placeholder="kg" min="0" step="0.1" style="margin-bottom:0;"><input type="number" class="cc" placeholder="n° cam" min="0" style="margin-bottom:0;text-align:center;"><button class="rm-btn" onclick="removeCamionRow('${id}')">✕</button>`;
+  div.innerHTML=`<input type="text" class="cn" placeholder="Tipo carico" list="dl_mat" style="margin-bottom:0;" autocomplete="off"><input type="number" class="cp" placeholder="kg" min="0" step="1" inputmode="numeric" style="margin-bottom:0;"><input type="number" class="cc" placeholder="n°" min="0" inputmode="numeric" style="margin-bottom:0;text-align:center;"><button class="rm-btn" onclick="removeCamionRow('${id}')">✕</button>`;
   document.getElementById('camionList').appendChild(div);
 }
 function removeCamionRow(id) {
