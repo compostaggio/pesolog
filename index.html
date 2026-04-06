@@ -575,10 +575,12 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
   <div class="card">
     <div class="card-title">🚚 Organico conferito</div>
     <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Inserisci il dato esterno settimanale o mensile</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 80px;gap:8px;margin-bottom:8px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
       <div><label>Dal</label><input type="date" id="confDal" style="margin-bottom:0;"></div>
       <div><label>Al</label><input type="date" id="confAl" style="margin-bottom:0;"></div>
-      <div><label>Quantità (kg)</label><input type="number" id="confQta" placeholder="es. 500000" min="0" style="margin-bottom:0;"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 80px;gap:8px;margin-bottom:8px;">
+      <div><label>Quantità (kg)</label><input type="number" id="confQta" placeholder="es. 500000" min="0" inputmode="numeric" style="margin-bottom:0;"></div>
       <div style="display:flex;align-items:flex-end;"><button class="settings-add-btn" onclick="addConferimento()" style="width:100%;height:44px;">+</button></div>
     </div>
     <div id="confList" style="margin-top:8px;"></div>
