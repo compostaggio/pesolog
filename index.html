@@ -862,13 +862,14 @@ function showApp() {
   if (isAdmin) document.getElementById('settingsBtn').style.display = 'flex';
   initApp();
   applyRoleUI();
-  document.getElementById('hdrMenuBtn').addEventListener('click', function(e) {
-    e.stopPropagation();
-    document.getElementById('hdrDropdown').classList.toggle('open');
-  });
+
   // Mostra il ruolo nel menu header
+  // Aggiorna etichetta ruolo nel dropdown (rimuove eventuale precedente)
   const roleLabels = {admin:'Admin',operatore:'Operatore',supervisore:'Supervisore',solo_inserimento:'Solo inserimento'};
+  const oldRoleEl = document.getElementById('hdrRoleLabel');
+  if (oldRoleEl) oldRoleEl.remove();
   const roleEl = document.createElement('div');
+  roleEl.id = 'hdrRoleLabel';
   roleEl.style.cssText = 'font-size:10px;color:var(--text-muted);padding:4px 14px 8px;border-bottom:1px solid var(--border);margin-bottom:4px;';
   roleEl.textContent = roleLabels[userRole] || userRole;
   document.getElementById('hdrDropdown').insertBefore(roleEl, document.getElementById('hdrDropdown').firstChild);
@@ -1409,6 +1410,11 @@ function refreshDatalist() {
 function closeOverlay(id){document.getElementById(id).classList.remove('open');}
 document.addEventListener('DOMContentLoaded',()=>{
   document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
+  // Listener menu header — una sola volta, permanente
+  document.getElementById('hdrMenuBtn').addEventListener('click', function(e) {
+    e.stopPropagation();
+    document.getElementById('hdrDropdown').classList.toggle('open');
+  });
 });
 
 // ── EMAIL ─────────────────────────────────────────────────────────────
