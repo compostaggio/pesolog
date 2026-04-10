@@ -480,19 +480,6 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
 <!-- PAGE: STORICO -->
 <div id="page-storico" class="page">
   <div class="slabel">Storico report</div>
-  <div class="card" style="padding:12px 14px;margin-bottom:14px;">
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-      <div style="position:relative;flex:1;min-width:140px;">
-        <input type="date" id="storicoSearchDate" placeholder="Cerca data" oninput="renderStorico()" style="margin-bottom:0;padding-right:32px;">
-        <button onclick="document.getElementById('storicoSearchDate').value='';renderStorico();" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);font-size:16px;cursor:pointer;padding:4px;line-height:1;display:none;" id="storicoDateClear">&times;</button>
-      </div>
-      <div style="position:relative;flex:1;min-width:140px;">
-        <input type="text" id="storicoSearchText" placeholder="Cerca operatore, note..." oninput="renderStorico()" style="margin-bottom:0;padding-right:32px;">
-        <button onclick="document.getElementById('storicoSearchText').value='';renderStorico();" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);font-size:16px;cursor:pointer;padding:4px;line-height:1;display:none;" id="storicoTextClear">&times;</button>
-      </div>
-    </div>
-    <div id="storicoSearchInfo" style="font-size:11px;color:var(--text-muted);margin-top:6px;display:none;"></div>
-  </div>
   <div id="storicoList"></div>
 </div>
 
@@ -1140,45 +1127,7 @@ function renderRiepilogo(){
 function renderStorico(){
   const c=document.getElementById('storicoList');
   if(!reports.length){ c.innerHTML='<div class="empty"><div class="ico">📋</div><p>Nessun report ancora.<br>Inserisci il primo report giornaliero.</p></div>'; return; }
-
-  // Filtri cerca
-  const searchDate = document.getElementById('storicoSearchDate')?.value || '';
-  const searchText = (document.getElementById('storicoSearchText')?.value || '').toLowerCase().trim();
-  const dateClearBtn = document.getElementById('storicoDateClear');
-  const textClearBtn = document.getElementById('storicoTextClear');
-  const infoEl = document.getElementById('storicoSearchInfo');
-  if(dateClearBtn) dateClearBtn.style.display = searchDate ? 'block' : 'none';
-  if(textClearBtn) textClearBtn.style.display = searchText ? 'block' : 'none';
-
-  let sorted=[...reports].sort((a,b)=>new Date(b.data)-new Date(a.data));
-  const totalCount = sorted.length;
-
-  if(searchDate){
-    sorted = sorted.filter(r => r.data === searchDate);
-  }
-  if(searchText){
-    sorted = sorted.filter(r => {
-      const haystack = [
-        r.operatore, r.turno, r.note,
-        ...(r.materiali||[]).map(m => m.nome + ' ' + (m.da||'') + ' ' + (m.a||'')),
-        ...(r.camion?.carichi||[]).map(c => c.nome),
-        r.ammendante?.box||''
-      ].join(' ').toLowerCase();
-      return haystack.includes(searchText);
-    });
-  }
-
-  if(searchDate || searchText){
-    if(infoEl){ infoEl.style.display='block'; infoEl.textContent=`${sorted.length} di ${totalCount} report trovati`; }
-  } else {
-    if(infoEl) infoEl.style.display='none';
-  }
-
-  if(!sorted.length && (searchDate || searchText)){
-    c.innerHTML='<div class="empty"><div class="ico">🔍</div><p>Nessun report trovato per questa ricerca.</p></div>';
-    return;
-  }
-
+  const sorted=[...reports].sort((a,b)=>new Date(b.data)-new Date(a.data));
   c.innerHTML=sorted.map(r=>`
     <div class="log-entry">
       <div class="log-hdr">
