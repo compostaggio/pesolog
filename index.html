@@ -357,6 +357,24 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
     </div>
 
     <div class="settings-section">
+      <div class="settings-title">Macchine impianto (contaore)</div>
+      <div class="settings-list" id="settingsMacchine"></div>
+      <div class="settings-add">
+        <input type="text" id="newMacchina" placeholder="Es. Trituratore">
+        <button class="settings-add-btn" onclick="addSetting('macchine','newMacchina','Macchine')">+</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">Soglie alert analisi</div>
+      <div style="font-size:11px;color:var(--text-dim);line-height:1.7;margin-bottom:10px;">
+        Imposta i valori min/max per ogni parametro. Se un'analisi è fuori range, appare un avviso nella sezione Andamento.
+      </div>
+      <div id="soglieContainer"></div>
+      <button class="submit-btn" onclick="salvaSoglie()" style="margin-top:8px;font-size:12px;padding:10px;">Salva soglie</button>
+    </div>
+
+    <div class="settings-section">
       <div class="settings-title">Destinatari email settimanale</div>
       <div style="font-size:11px;color:var(--text-dim);line-height:1.7;margin-bottom:10px;">
         Riceveranno il riepilogo settimanale ogni martedì mattina.
@@ -734,6 +752,197 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
   </div>
 </div>
 
+<!-- PAGE: REGISTRO IMPIANTO -->
+<div id="page-registro" class="page">
+  <div class="slabel">Registro impianto</div>
+
+  <!-- Chip sotto-sezioni -->
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+    <button class="chip reg-chip active" data-regsect="analisi" onclick="toggleRegChip('analisi',this)" style="background:var(--accent);color:#fff;border:none;padding:8px 14px;border-radius:20px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;">🧪 Analisi</button>
+    <button class="chip reg-chip" data-regsect="contaore" onclick="toggleRegChip('contaore',this)" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:8px 14px;border-radius:20px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;">⚙️ Contaore</button>
+    <button class="chip reg-chip" data-regsect="gas" onclick="toggleRegChip('gas',this)" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:8px 14px;border-radius:20px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;">⛽ Produzione Gas</button>
+  </div>
+
+  <!-- ── ANALISI ── -->
+  <div id="regSect-analisi" class="reg-section">
+    <div class="card">
+      <div class="card-title">Nuova analisi</div>
+      <div style="margin-bottom:10px;">
+        <label>Tipo analisi</label>
+        <select id="analisiTipo" onchange="toggleAnalisiFields()" style="margin-bottom:0;">
+          <option value="biogas">Biogas</option>
+          <option value="percolato">Percolato</option>
+          <option value="merceologica">Merceologica</option>
+        </select>
+      </div>
+      <div style="margin-bottom:10px;">
+        <label>Data</label>
+        <input type="date" id="analisiData" style="margin-bottom:0;">
+      </div>
+      <!-- Cisterna (solo percolato) -->
+      <div id="analisiCisternaWrap" style="margin-bottom:10px;display:none;">
+        <label>Cisterna</label>
+        <select id="analisiCisterna" style="margin-bottom:0;">
+          <option value="A">Cisterna A</option>
+          <option value="B">Cisterna B</option>
+        </select>
+      </div>
+      <!-- Campi Biogas -->
+      <div id="analisiBiogasFields">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+          <div><label>CH₄ (%)</label><input type="number" inputmode="decimal" step="0.1" id="anBiogas_ch4" style="margin-bottom:0;"></div>
+          <div><label>CO₂ (%)</label><input type="number" inputmode="decimal" step="0.1" id="anBiogas_co2" style="margin-bottom:0;"></div>
+          <div><label>H₂S (ppm)</label><input type="number" inputmode="decimal" step="1" id="anBiogas_h2s" style="margin-bottom:0;"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+          <div><label>N₂ (%)</label><input type="number" inputmode="decimal" step="0.1" id="anBiogas_n2" style="margin-bottom:0;"></div>
+          <div><label>O₂ (%)</label><input type="number" inputmode="decimal" step="0.1" id="anBiogas_o2" style="margin-bottom:0;"></div>
+        </div>
+      </div>
+      <!-- Campi Percolato -->
+      <div id="analisiPercolatoFields" style="display:none;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+          <div><label>pH</label><input type="number" inputmode="decimal" step="0.01" id="anPerc_ph" style="margin-bottom:0;"></div>
+          <div><label>Conducibilità (mS/cm)</label><input type="number" inputmode="decimal" step="0.1" id="anPerc_cond" style="margin-bottom:0;"></div>
+          <div><label>Temperatura (°C)</label><input type="number" inputmode="decimal" step="0.1" id="anPerc_temp" style="margin-bottom:0;"></div>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin:10px 0 6px;">Parametri occasionali (compila solo se disponibili)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+          <div><label>TAC</label><input type="number" inputmode="decimal" step="0.1" id="anPerc_tac" style="margin-bottom:0;"></div>
+          <div><label>Tampone</label><input type="number" inputmode="decimal" step="0.1" id="anPerc_tampone" style="margin-bottom:0;"></div>
+          <div><label>Azoto ammon.</label><input type="number" inputmode="decimal" step="0.1" id="anPerc_azoto" style="margin-bottom:0;"></div>
+        </div>
+      </div>
+      <!-- Campi Merceologica -->
+      <div id="analisiMerceologicaFields" style="display:none;">
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">Inserisci i pesi in kg — le percentuali si calcolano automaticamente.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+          <div><label>Digeribile (kg)</label><input type="number" inputmode="numeric" id="anMerc_digeribile" oninput="calcMercPerc()" style="margin-bottom:0;"></div>
+          <div><label>Non digeribile (kg)</label><input type="number" inputmode="numeric" id="anMerc_nondigeribile" oninput="calcMercPerc()" style="margin-bottom:0;"></div>
+          <div><label>Legno (kg)</label><input type="number" inputmode="numeric" id="anMerc_legno" oninput="calcMercPerc()" style="margin-bottom:0;"></div>
+        </div>
+        <div id="mercPercResult" style="font-size:12px;color:var(--accent);margin-top:8px;font-weight:600;"></div>
+      </div>
+      <div style="margin-top:10px;">
+        <label>Note</label>
+        <textarea id="analisiNote" rows="2" placeholder="Note opzionali..." style="margin-bottom:0;"></textarea>
+      </div>
+      <button class="submit-btn" onclick="salvaAnalisi()" style="margin-top:12px;">Salva analisi</button>
+    </div>
+    <!-- Storico analisi -->
+    <div class="card" style="margin-top:14px;">
+      <div class="card-title">Storico analisi</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <select id="analisiStoricoFiltro" onchange="renderAnalisiStorico()" style="margin-bottom:0;flex:1;">
+          <option value="">Tutti i tipi</option>
+          <option value="biogas">Biogas</option>
+          <option value="percolato">Percolato</option>
+          <option value="merceologica">Merceologica</option>
+        </select>
+        <input type="date" id="analisiStoricoData" oninput="renderAnalisiStorico()" style="margin-bottom:0;flex:1;">
+      </div>
+      <div id="analisiStoricoList"></div>
+    </div>
+  </div>
+
+  <!-- ── CONTAORE ── -->
+  <div id="regSect-contaore" class="reg-section" style="display:none;">
+    <div class="card">
+      <div class="card-title">Nuova lettura contaore</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div><label>Macchina</label>
+          <select id="contaoreMacchina" style="margin-bottom:0;"></select>
+        </div>
+        <div><label>Data lettura</label>
+          <input type="date" id="contaoreData" style="margin-bottom:0;">
+        </div>
+      </div>
+      <div style="margin-top:8px;">
+        <label>Ore (valore contaore)</label>
+        <input type="number" inputmode="decimal" step="0.1" id="contaoreOre" placeholder="Es. 12345.6" style="margin-bottom:0;">
+      </div>
+      <div style="margin-top:8px;">
+        <label>Note</label>
+        <input type="text" id="contaoreNote" placeholder="Note opzionali..." style="margin-bottom:0;">
+      </div>
+      <button class="submit-btn" onclick="salvaContaore()" style="margin-top:12px;">Salva lettura</button>
+    </div>
+    <div class="card" style="margin-top:14px;">
+      <div class="card-title">Storico contaore</div>
+      <div id="contaoreStoricoList"></div>
+    </div>
+  </div>
+
+  <!-- ── PRODUZIONE GAS ── -->
+  <div id="regSect-gas" class="reg-section" style="display:none;">
+    <div class="card">
+      <div class="card-title">Nuova lettura produzione gas</div>
+      <div style="margin-bottom:8px;">
+        <label>Data</label>
+        <input type="date" id="gasData" style="margin-bottom:0;">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div><label>Gas in rete (Nm³) — cumulativo</label>
+          <input type="number" inputmode="decimal" step="0.1" id="gasRete" style="margin-bottom:0;">
+        </div>
+        <div><label>Biogas prodotto (Nm³)</label>
+          <input type="number" inputmode="decimal" step="0.1" id="gasBiogas" style="margin-bottom:0;">
+        </div>
+      </div>
+      <div style="margin-top:8px;">
+        <label>Note</label>
+        <input type="text" id="gasNote" placeholder="Note opzionali..." style="margin-bottom:0;">
+      </div>
+      <button class="submit-btn" onclick="salvaProdGas()" style="margin-top:12px;">Salva lettura</button>
+    </div>
+    <div class="card" style="margin-top:14px;">
+      <div class="card-title">Storico produzione gas</div>
+      <div id="gasStoricoList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: ANDAMENTO -->
+<div id="page-andamento" class="page">
+  <div class="slabel">Andamento impianto</div>
+
+  <!-- Alert attivi -->
+  <div id="andamentoAlerts"></div>
+
+  <!-- Riepilogo ultima analisi per tipo -->
+  <div class="card">
+    <div class="card-title">📊 Ultima analisi per tipo</div>
+    <div id="andamentoUltimeAnalisi"></div>
+  </div>
+
+  <!-- Grafici trend -->
+  <div class="card" style="margin-top:14px;">
+    <div class="card-title">📈 Trend analisi</div>
+    <div style="margin-bottom:10px;">
+      <label>Tipo</label>
+      <select id="andTrendTipo" onchange="renderAndamentoGrafici()" style="margin-bottom:0;">
+        <option value="biogas">Biogas</option>
+        <option value="percolato">Percolato</option>
+        <option value="merceologica">Merceologica</option>
+      </select>
+    </div>
+    <div style="margin-bottom:8px;">
+      <label>Periodo</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <input type="date" id="andTrendDa" onchange="renderAndamentoGrafici()" style="margin-bottom:0;">
+        <input type="date" id="andTrendA" onchange="renderAndamentoGrafici()" style="margin-bottom:0;">
+      </div>
+    </div>
+    <canvas id="andTrendChart" height="220"></canvas>
+  </div>
+
+  <!-- Trend produzione gas -->
+  <div class="card" style="margin-top:14px;">
+    <div class="card-title">⛽ Trend produzione gas</div>
+    <canvas id="andGasChart" height="200"></canvas>
+  </div>
+</div>
+
 <nav class="nav">
   <button class="nb active" data-page="inserimento" onclick="showPage('inserimento',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
@@ -759,6 +968,14 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
     Scenari
   </button>
+  <button class="nb" data-page="andamento" onclick="showPage('andamento',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+    Andamento
+  </button>
+  <button class="nb" data-page="registro" onclick="showPage('registro',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    Registro
+  </button>
 </nav>
 
 </div><!-- /appContent -->
@@ -779,9 +996,9 @@ let userRole = 'operatore'; // admin | operatore | supervisore | solo_inseriment
 
 // Pagine accessibili per ruolo
 const ROLE_PAGES = {
-  admin:            ['inserimento','riepilogo','storico','grafici','depositi','scenari'],
+  admin:            ['inserimento','riepilogo','storico','grafici','depositi','scenari','andamento','registro'],
   operatore:        ['inserimento','storico'],
-  supervisore:      ['riepilogo','grafici','depositi','scenari'],
+  supervisore:      ['riepilogo','grafici','depositi','scenari','andamento'],
   solo_inserimento: ['inserimento']
 };
 
@@ -809,8 +1026,23 @@ let reports = [];
 let conferimenti = [];
 let depIniziale = { data:'', sovvallo:0, inoculo:0, organico:0 };
 let settings = {
-  operatori:[], materiali:[], box:[], luoghi:[], emails:[], pin:'1234'
+  operatori:[], materiali:[], box:[], luoghi:[], macchine:[], emails:[], pin:'1234',
+  soglie: {}
 };
+// Soglie default per analisi
+const SOGLIE_DEFAULT = {
+  biogas_ch4:  { label:'CH₄ (%)', min:45, max:70 },
+  biogas_co2:  { label:'CO₂ (%)', min:25, max:45 },
+  biogas_h2s:  { label:'H₂S (ppm)', min:null, max:500 },
+  biogas_o2:   { label:'O₂ (%)', min:null, max:2 },
+  perc_ph:     { label:'pH percolato', min:6.5, max:8.5 },
+  perc_cond:   { label:'Conducib. (mS/cm)', min:null, max:null },
+  perc_temp:   { label:'Temp. percolato (°C)', min:null, max:55 },
+  merc_digeribile: { label:'Digeribile (%)', min:60, max:null }
+};
+let analisiData = [];
+let contaoreData = [];
+let produzioneGasData = [];
 
 // ══════════════════════════════════════════════════════════════════════
 // AUTH
@@ -907,9 +1139,23 @@ async function loadAllData() {
     settings.materiali = s.materiali||[];
     settings.box       = s.box||[];
     settings.luoghi    = s.luoghi||[];
+    settings.macchine  = s.macchine||[];
+    settings.soglie    = s.soglie||{};
     settings.emails    = s.emails||[];
     settings.pin       = s.pin||'1234';
   }
+
+  // Carica dati Registro Impianto (solo se le tabelle esistono)
+  try {
+    const [aRes, coRes, pgRes] = await Promise.all([
+      sb.from('analisi').select('*').order('data', { ascending: false }),
+      sb.from('contaore').select('*').order('data', { ascending: false }),
+      sb.from('produzione_gas').select('*').order('data', { ascending: false })
+    ]);
+    analisiData = aRes.data||[];
+    contaoreData = coRes.data||[];
+    produzioneGasData = pgRes.data||[];
+  } catch(e) { console.log('Tabelle registro impianto non ancora create'); }
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -957,6 +1203,8 @@ async function dbSaveSettings() {
     materiali: settings.materiali,
     box:       settings.box,
     luoghi:    settings.luoghi,
+    macchine:  settings.macchine,
+    soglie:    settings.soglie,
     emails:    settings.emails,
     pin:       settings.pin
   });
@@ -1029,6 +1277,8 @@ function showPage(name, btn) {
   if(name==='grafici')   renderGrafici();
   if(name==='depositi')  renderDepositi();
   if(name==='scenari')   { renderPrevisione(); renderObiettivoSuggestion(); renderSimulatore(); initMultiFase(); renderMultiFase(); }
+  if(name==='andamento') { renderAndamento(); }
+  if(name==='registro')  { renderRegistroImpianto(); }
 }
 
 // ── CHIPS ─────────────────────────────────────────────────────────────
@@ -1411,8 +1661,9 @@ function updatePinDots(){for(let i=0;i<4;i++)document.getElementById('pd'+i).cla
 
 // ── SETTINGS ─────────────────────────────────────────────────────────
 function openSettings() {
-  ['Operatori','Materiali','Box','Luoghi'].forEach(k=>renderSettingsList(k.toLowerCase(),'settings'+k));
+  ['Operatori','Materiali','Box','Luoghi','Macchine'].forEach(k=>renderSettingsList(k.toLowerCase(),'settings'+k));
   renderEmailList();
+  renderSoglieForm();
   document.getElementById('settingsOverlay').classList.add('open');
 }
 
@@ -1437,7 +1688,7 @@ async function delSetting(key,i) {
   if(!confirm('Eliminare "'+settings[key][i]+'"?'))return;
   settings[key].splice(i,1);
   try{await dbSaveSettings();}catch(e){showToast('⚠ Errore','#ff6b35');return;}
-  const labels={operatori:'Operatori',materiali:'Materiali',box:'Box',luoghi:'Luoghi'};
+  const labels={operatori:'Operatori',materiali:'Materiali',box:'Box',luoghi:'Luoghi',macchine:'Macchine'};
   renderSettingsList(key,'settings'+labels[key]);
   populateSelects(); refreshDatalist();
 }
@@ -1796,6 +2047,603 @@ function renderDepositi() {
   const depRow=(label,val,color)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);"><span style="font-size:13px;">${label}</span><span style="font-size:16px;font-weight:800;color:${color};">${fmtPeso(val)}</span></div>`;
   dl.innerHTML=depRow('🟡 Sovvallo a deposito',dep.sovvallo,'var(--accent)')+depRow('🟠 Inoculo a deposito',dep.inoculo,'#ffb347')+depRow('🟢 Organico a deposito',dep.organico,'var(--success)');
   renderPrevisione();
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// ANDAMENTO IMPIANTO — Dashboard, Alert, Grafici trend
+// ══════════════════════════════════════════════════════════════════════
+
+function getSoglia(key) {
+  const def = SOGLIE_DEFAULT[key] || {};
+  const custom = settings.soglie[key] || {};
+  return {
+    label: def.label || key,
+    min: custom.min !== undefined ? custom.min : def.min,
+    max: custom.max !== undefined ? custom.max : def.max
+  };
+}
+
+function renderSoglieForm() {
+  const c = document.getElementById('soglieContainer');
+  if (!c) return;
+  let html = '<div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:6px;margin-bottom:6px;">' +
+    '<div style="font-size:10px;font-weight:600;color:var(--text-dim);">Parametro</div>' +
+    '<div style="font-size:10px;font-weight:600;color:var(--text-dim);">Min</div>' +
+    '<div style="font-size:10px;font-weight:600;color:var(--text-dim);">Max</div></div>';
+  Object.keys(SOGLIE_DEFAULT).forEach(key => {
+    const s = getSoglia(key);
+    html += `<div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:6px;align-items:center;margin-bottom:4px;">
+      <div style="font-size:11px;">${s.label}</div>
+      <input type="number" step="0.1" id="soglia_min_${key}" value="${s.min != null ? s.min : ''}" placeholder="—" style="margin-bottom:0;padding:6px;font-size:12px;">
+      <input type="number" step="0.1" id="soglia_max_${key}" value="${s.max != null ? s.max : ''}" placeholder="—" style="margin-bottom:0;padding:6px;font-size:12px;">
+    </div>`;
+  });
+  c.innerHTML = html;
+}
+
+async function salvaSoglie() {
+  const soglie = {};
+  Object.keys(SOGLIE_DEFAULT).forEach(key => {
+    const minVal = document.getElementById('soglia_min_' + key)?.value;
+    const maxVal = document.getElementById('soglia_max_' + key)?.value;
+    soglie[key] = {
+      min: minVal !== '' && minVal != null ? parseFloat(minVal) : null,
+      max: maxVal !== '' && maxVal != null ? parseFloat(maxVal) : null
+    };
+  });
+  settings.soglie = soglie;
+  try { await dbSaveSettings(); showToast('✓ Soglie salvate'); } catch(e) { showToast('⚠ Errore','#ff6b35'); }
+}
+
+function renderAndamento() {
+  renderAndamentoAlerts();
+  renderUltimeAnalisi();
+  renderAndamentoGrafici();
+  renderAndamentoGas();
+  // Imposta date trend
+  const now = new Date();
+  const m3 = new Date(); m3.setMonth(m3.getMonth() - 3);
+  if (document.getElementById('andTrendDa')) document.getElementById('andTrendDa').value = m3.toISOString().split('T')[0];
+  if (document.getElementById('andTrendA')) document.getElementById('andTrendA').value = now.toISOString().split('T')[0];
+}
+
+function renderAndamentoAlerts() {
+  const c = document.getElementById('andamentoAlerts');
+  if (!c) return;
+  const alerts = [];
+
+  // Ultima analisi per tipo
+  ['biogas', 'percolato', 'merceologica'].forEach(tipo => {
+    const last = analisiData.filter(a => a.tipo === tipo).sort((a, b) => new Date(b.data) - new Date(a.data))[0];
+    if (!last) return;
+    const v = last.valori || {};
+
+    if (tipo === 'biogas') {
+      checkAlert(alerts, 'biogas_ch4', v.ch4, last.data, 'Biogas');
+      checkAlert(alerts, 'biogas_co2', v.co2, last.data, 'Biogas');
+      checkAlert(alerts, 'biogas_h2s', v.h2s, last.data, 'Biogas');
+      checkAlert(alerts, 'biogas_o2', v.o2, last.data, 'Biogas');
+    } else if (tipo === 'percolato') {
+      const label = last.cisterna ? 'Percolato Cist.' + last.cisterna : 'Percolato';
+      checkAlert(alerts, 'perc_ph', v.ph, last.data, label);
+      checkAlert(alerts, 'perc_cond', v.conducibilita, last.data, label);
+      checkAlert(alerts, 'perc_temp', v.temperatura, last.data, label);
+    } else if (tipo === 'merceologica') {
+      checkAlert(alerts, 'merc_digeribile', v.digeribile_perc, last.data, 'Merceologica');
+    }
+  });
+
+  if (!alerts.length) {
+    c.innerHTML = '<div class="card" style="background:#e8f5e9;border-color:#a5d6a7;margin-bottom:14px;padding:12px;"><div style="font-size:13px;color:#2e7d32;font-weight:600;">✅ Tutti i parametri nella norma</div></div>';
+    return;
+  }
+
+  c.innerHTML = alerts.map(a => `
+    <div class="card" style="background:#fff3e0;border-color:#ffcc80;margin-bottom:8px;padding:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#e65100;">⚠️ ${a.label} — ${a.param}</div>
+          <div style="font-size:11px;color:var(--text-dim);">${a.msg} (${fmtData(a.data)})</div>
+        </div>
+        <div style="font-size:16px;font-weight:700;color:#e65100;">${a.value}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function checkAlert(alerts, key, value, data, source) {
+  if (value == null) return;
+  const s = getSoglia(key);
+  if (s.min != null && value < s.min) {
+    alerts.push({ label: source, param: s.label, value, data, msg: `Sotto soglia min (${s.min})` });
+  }
+  if (s.max != null && value > s.max) {
+    alerts.push({ label: source, param: s.label, value, data, msg: `Sopra soglia max (${s.max})` });
+  }
+}
+
+function renderUltimeAnalisi() {
+  const c = document.getElementById('andamentoUltimeAnalisi');
+  if (!c) return;
+
+  let html = '';
+  ['biogas', 'percolato', 'merceologica'].forEach(tipo => {
+    const items = analisiData.filter(a => a.tipo === tipo).sort((a, b) => new Date(b.data) - new Date(a.data));
+    const last = items[0];
+    const tipoLabel = { biogas: '🔬 Biogas', percolato: '🧪 Percolato', merceologica: '📊 Merceologica' }[tipo];
+
+    if (!last) {
+      html += `<div style="font-size:12px;color:var(--text-muted);padding:6px 0;">${tipoLabel}: nessuna analisi</div>`;
+      return;
+    }
+
+    const v = last.valori || {};
+    let detail = '';
+    if (tipo === 'biogas') {
+      detail = `CH₄: <b>${fmt(v.ch4)}%</b> · CO₂: <b>${fmt(v.co2)}%</b> · H₂S: <b>${fmt(v.h2s)}ppm</b> · O₂: <b>${fmt(v.o2)}%</b>`;
+    } else if (tipo === 'percolato') {
+      detail = `Cist.${last.cisterna||'?'} · pH: <b>${fmt(v.ph)}</b> · Cond: <b>${fmt(v.conducibilita)}mS</b> · T: <b>${fmt(v.temperatura)}°C</b>`;
+      if (v.tac) detail += ` · TAC: <b>${fmt(v.tac)}</b>`;
+    } else {
+      detail = `Dig: <b>${fmt(v.digeribile_perc)}%</b> · Non dig: <b>${fmt(v.nondigeribile_perc)}%</b> · Legno: <b>${fmt(v.legno_perc)}%</b>`;
+    }
+
+    const nAnalisi = items.length;
+    html += `<div style="background:var(--surface2);border-radius:var(--rs);padding:10px;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <span style="font-size:12px;font-weight:700;">${tipoLabel}</span>
+        <span style="font-size:10px;color:var(--text-muted);">${fmtData(last.data)} · ${nAnalisi} totali</span>
+      </div>
+      <div style="font-size:11px;color:var(--text-dim);">${detail}</div>
+    </div>`;
+  });
+
+  c.innerHTML = html;
+}
+
+let andTrendChartInstance = null;
+function renderAndamentoGrafici() {
+  if (typeof Chart === 'undefined') return;
+  const tipo = document.getElementById('andTrendTipo')?.value || 'biogas';
+  const da = document.getElementById('andTrendDa')?.value || '';
+  const a = document.getElementById('andTrendA')?.value || '';
+
+  let items = analisiData.filter(r => r.tipo === tipo).sort((x, y) => new Date(x.data) - new Date(y.data));
+  if (da) items = items.filter(r => r.data >= da);
+  if (a) items = items.filter(r => r.data <= a);
+
+  const ctx = document.getElementById('andTrendChart');
+  if (!ctx) return;
+  if (andTrendChartInstance) andTrendChartInstance.destroy();
+
+  if (!items.length) { andTrendChartInstance = null; return; }
+
+  const labels = items.map(r => fmtData(r.data));
+  const datasets = [];
+  const colors = ['#2e7d32','#e65100','#00838f','#6a1b9a','#c62828','#1565c0'];
+
+  if (tipo === 'biogas') {
+    ['ch4','co2','h2s','n2','o2'].forEach((k, i) => {
+      const data = items.map(r => r.valori?.[k] ?? null);
+      if (data.some(v => v != null)) datasets.push({ label: k.toUpperCase(), data, borderColor: colors[i], backgroundColor: 'transparent', tension: 0.3, pointRadius: 3 });
+    });
+  } else if (tipo === 'percolato') {
+    ['ph','conducibilita','temperatura'].forEach((k, i) => {
+      const lbl = {ph:'pH',conducibilita:'Conducib.',temperatura:'Temp.'}[k];
+      const data = items.map(r => r.valori?.[k] ?? null);
+      if (data.some(v => v != null)) datasets.push({ label: lbl, data, borderColor: colors[i], backgroundColor: 'transparent', tension: 0.3, pointRadius: 3 });
+    });
+  } else if (tipo === 'merceologica') {
+    ['digeribile_perc','nondigeribile_perc','legno_perc'].forEach((k, i) => {
+      const lbl = {digeribile_perc:'Digeribile %',nondigeribile_perc:'Non dig. %',legno_perc:'Legno %'}[k];
+      const data = items.map(r => r.valori?.[k] ?? null);
+      if (data.some(v => v != null)) datasets.push({ label: lbl, data, borderColor: colors[i], backgroundColor: 'transparent', tension: 0.3, pointRadius: 3 });
+    });
+  }
+
+  andTrendChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } }, scales: { x: { ticks: { font: { size: 9 } } }, y: { ticks: { font: { size: 10 } } } } }
+  });
+}
+
+let andGasChartInstance = null;
+function renderAndamentoGas() {
+  if (typeof Chart === 'undefined') return;
+  const ctx = document.getElementById('andGasChart');
+  if (!ctx) return;
+  if (andGasChartInstance) andGasChartInstance.destroy();
+
+  const sorted = [...produzioneGasData].sort((a, b) => new Date(a.data) - new Date(b.data));
+  if (sorted.length < 2) { andGasChartInstance = null; return; }
+
+  const labels = [];
+  const prodNetta = [];
+  const biogasValues = [];
+
+  for (let i = 1; i < sorted.length; i++) {
+    const curr = sorted[i], prev = sorted[i - 1];
+    labels.push(fmtData(curr.data));
+    prodNetta.push(curr.gas_rete && prev.gas_rete ? +(curr.gas_rete - prev.gas_rete).toFixed(1) : null);
+    biogasValues.push(curr.biogas_prodotto ?? null);
+  }
+
+  const datasets = [];
+  if (prodNetta.some(v => v != null)) datasets.push({ label: 'Prod. netta rete (Nm³)', data: prodNetta, borderColor: '#2e7d32', backgroundColor: 'rgba(46,125,50,0.1)', fill: true, tension: 0.3 });
+  if (biogasValues.some(v => v != null)) datasets.push({ label: 'Biogas prodotto (Nm³)', data: biogasValues, borderColor: '#e65100', backgroundColor: 'transparent', tension: 0.3, borderDash: [5, 5] });
+
+  if (!datasets.length) return;
+
+  andGasChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } }, scales: { x: { ticks: { font: { size: 9 } } }, y: { ticks: { font: { size: 10 } } } } }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// REGISTRO IMPIANTO — Analisi, Contaore, Produzione Gas
+// ══════════════════════════════════════════════════════════════════════
+
+function toggleRegChip(sect, btn) {
+  document.querySelectorAll('.reg-chip').forEach(b => {
+    b.style.background = 'var(--surface2)';
+    b.style.color = 'var(--text)';
+    b.style.border = '1px solid var(--border)';
+    b.classList.remove('active');
+  });
+  btn.style.background = 'var(--accent)';
+  btn.style.color = '#fff';
+  btn.style.border = 'none';
+  btn.classList.add('active');
+  document.querySelectorAll('.reg-section').forEach(s => s.style.display = 'none');
+  document.getElementById('regSect-' + sect).style.display = 'block';
+  if (sect === 'contaore') populateContaoreMacchine();
+}
+
+function renderRegistroImpianto() {
+  renderAnalisiStorico();
+  renderContaoreStorico();
+  renderGasStorico();
+  populateContaoreMacchine();
+  // Imposta data odierna nei form
+  const today = new Date().toISOString().split('T')[0];
+  if (document.getElementById('analisiData')) document.getElementById('analisiData').value = today;
+  if (document.getElementById('contaoreData')) document.getElementById('contaoreData').value = today;
+  if (document.getElementById('gasData')) document.getElementById('gasData').value = today;
+}
+
+function populateContaoreMacchine() {
+  const sel = document.getElementById('contaoreMacchina');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Seleziona macchina...</option>';
+  (settings.macchine || []).forEach(m => {
+    const o = document.createElement('option');
+    o.value = o.textContent = m;
+    sel.appendChild(o);
+  });
+  if (cur) sel.value = cur;
+}
+
+// ── ANALISI: Toggle campi ─────────────────────────────────────────
+function toggleAnalisiFields() {
+  const tipo = document.getElementById('analisiTipo').value;
+  document.getElementById('analisiBiogasFields').style.display = tipo === 'biogas' ? 'block' : 'none';
+  document.getElementById('analisiPercolatoFields').style.display = tipo === 'percolato' ? 'block' : 'none';
+  document.getElementById('analisiMerceologicaFields').style.display = tipo === 'merceologica' ? 'block' : 'none';
+  document.getElementById('analisiCisternaWrap').style.display = tipo === 'percolato' ? 'block' : 'none';
+}
+
+function calcMercPerc() {
+  const d = parseFloat(document.getElementById('anMerc_digeribile').value) || 0;
+  const nd = parseFloat(document.getElementById('anMerc_nondigeribile').value) || 0;
+  const l = parseFloat(document.getElementById('anMerc_legno').value) || 0;
+  const tot = d + nd + l;
+  const el = document.getElementById('mercPercResult');
+  if (tot > 0) {
+    el.textContent = `Totale: ${tot} kg → Digeribile ${(d/tot*100).toFixed(1)}% · Non dig. ${(nd/tot*100).toFixed(1)}% · Legno ${(l/tot*100).toFixed(1)}%`;
+  } else {
+    el.textContent = '';
+  }
+}
+
+// ── ANALISI: Salvataggio ──────────────────────────────────────────
+async function salvaAnalisi() {
+  const tipo = document.getElementById('analisiTipo').value;
+  const data = document.getElementById('analisiData').value;
+  if (!data) { showToast('⚠ Seleziona una data', '#ff6b35'); return; }
+
+  let valori = {};
+  if (tipo === 'biogas') {
+    valori = {
+      ch4: parseFloat(document.getElementById('anBiogas_ch4').value) || null,
+      co2: parseFloat(document.getElementById('anBiogas_co2').value) || null,
+      h2s: parseFloat(document.getElementById('anBiogas_h2s').value) || null,
+      n2: parseFloat(document.getElementById('anBiogas_n2').value) || null,
+      o2: parseFloat(document.getElementById('anBiogas_o2').value) || null
+    };
+  } else if (tipo === 'percolato') {
+    valori = {
+      ph: parseFloat(document.getElementById('anPerc_ph').value) || null,
+      conducibilita: parseFloat(document.getElementById('anPerc_cond').value) || null,
+      temperatura: parseFloat(document.getElementById('anPerc_temp').value) || null,
+      tac: parseFloat(document.getElementById('anPerc_tac').value) || null,
+      tampone: parseFloat(document.getElementById('anPerc_tampone').value) || null,
+      azoto_ammoniacale: parseFloat(document.getElementById('anPerc_azoto').value) || null
+    };
+  } else if (tipo === 'merceologica') {
+    const d = parseFloat(document.getElementById('anMerc_digeribile').value) || 0;
+    const nd = parseFloat(document.getElementById('anMerc_nondigeribile').value) || 0;
+    const l = parseFloat(document.getElementById('anMerc_legno').value) || 0;
+    const tot = d + nd + l;
+    if (tot === 0) { showToast('⚠ Inserisci almeno un peso', '#ff6b35'); return; }
+    valori = {
+      digeribile_kg: d, nondigeribile_kg: nd, legno_kg: l, totale_kg: tot,
+      digeribile_perc: +(d/tot*100).toFixed(1),
+      nondigeribile_perc: +(nd/tot*100).toFixed(1),
+      legno_perc: +(l/tot*100).toFixed(1)
+    };
+  }
+
+  const user = (await sb.auth.getUser()).data.user;
+  const record = {
+    user_id: user.id,
+    tipo,
+    data,
+    cisterna: tipo === 'percolato' ? document.getElementById('analisiCisterna').value : null,
+    valori,
+    note: document.getElementById('analisiNote').value.trim()
+  };
+
+  try {
+    showSaving();
+    const { error } = await sb.from('analisi').insert(record);
+    if (error) throw error;
+    analisiData.unshift({ ...record, id: crypto.randomUUID() });
+    // Ricarica per avere l'id reale
+    const { data: fresh } = await sb.from('analisi').select('*').order('data', { ascending: false });
+    analisiData = fresh || [];
+    showToast('✓ Analisi salvata');
+    clearAnalisiForm();
+    renderAnalisiStorico();
+  } catch (e) {
+    showToast('⚠ Errore: ' + e.message, '#ff6b35');
+  }
+}
+
+function clearAnalisiForm() {
+  ['anBiogas_ch4','anBiogas_co2','anBiogas_h2s','anBiogas_n2','anBiogas_o2',
+   'anPerc_ph','anPerc_cond','anPerc_temp','anPerc_tac','anPerc_tampone','anPerc_azoto',
+   'anMerc_digeribile','anMerc_nondigeribile','anMerc_legno'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('analisiNote').value = '';
+  document.getElementById('mercPercResult').textContent = '';
+}
+
+// ── ANALISI: Storico ──────────────────────────────────────────────
+function renderAnalisiStorico() {
+  const c = document.getElementById('analisiStoricoList');
+  if (!c) return;
+  const filtroTipo = document.getElementById('analisiStoricoFiltro')?.value || '';
+  const filtroData = document.getElementById('analisiStoricoData')?.value || '';
+
+  let items = [...analisiData];
+  if (filtroTipo) items = items.filter(a => a.tipo === filtroTipo);
+  if (filtroData) items = items.filter(a => a.data === filtroData);
+
+  if (!items.length) {
+    c.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:12px;">Nessuna analisi trovata.</div>';
+    return;
+  }
+
+  c.innerHTML = items.map(a => {
+    const v = a.valori || {};
+    let dettaglio = '';
+    if (a.tipo === 'biogas') {
+      dettaglio = ['CH₄:'+fmt(v.ch4)+'%','CO₂:'+fmt(v.co2)+'%','H₂S:'+fmt(v.h2s)+'ppm','N₂:'+fmt(v.n2)+'%','O₂:'+fmt(v.o2)+'%'].filter(s=>!s.includes('null')).join(' · ');
+    } else if (a.tipo === 'percolato') {
+      let parts = ['pH:'+fmt(v.ph),'Cond:'+fmt(v.conducibilita)+'mS','T:'+fmt(v.temperatura)+'°C'];
+      if (v.tac) parts.push('TAC:'+fmt(v.tac));
+      if (v.tampone) parts.push('Tamp:'+fmt(v.tampone));
+      if (v.azoto_ammoniacale) parts.push('NH₄:'+fmt(v.azoto_ammoniacale));
+      dettaglio = parts.filter(s=>!s.includes('null')).join(' · ');
+    } else if (a.tipo === 'merceologica') {
+      dettaglio = `Dig:${fmt(v.digeribile_kg)}kg (${fmt(v.digeribile_perc)}%) · Non dig:${fmt(v.nondigeribile_kg)}kg (${fmt(v.nondigeribile_perc)}%) · Legno:${fmt(v.legno_kg)}kg (${fmt(v.legno_perc)}%)`;
+    }
+    const tipoLabel = {biogas:'🔬 Biogas',percolato:'🧪 Percolato',merceologica:'📊 Merceologica'}[a.tipo]||a.tipo;
+    const cisternaLabel = a.cisterna ? ` — Cisterna ${a.cisterna}` : '';
+    return `<div class="log-entry">
+      <div class="log-hdr">
+        <div><div class="log-date">${fmtData(a.data)} — ${tipoLabel}${cisternaLabel}</div></div>
+      </div>
+      <div style="font-size:12px;color:var(--text-dim);margin-top:4px;">${dettaglio}</div>
+      ${a.note?`<div class="log-note">${a.note}</div>`:''}
+      <div class="log-actions">
+        <button class="log-act-btn del" onclick="deleteAnalisi('${a.id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          Elimina
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function fmt(v) { return v != null ? v : 'null'; }
+
+async function deleteAnalisi(id) {
+  if (!confirm('Eliminare questa analisi?')) return;
+  try {
+    const { error } = await sb.from('analisi').delete().eq('id', id);
+    if (error) throw error;
+    analisiData = analisiData.filter(a => a.id !== id);
+    renderAnalisiStorico();
+    showToast('✓ Analisi eliminata');
+  } catch (e) { showToast('⚠ Errore: ' + e.message, '#ff6b35'); }
+}
+
+// ── CONTAORE: Salvataggio e Storico ───────────────────────────────
+async function salvaContaore() {
+  const macchina = document.getElementById('contaoreMacchina').value;
+  const data = document.getElementById('contaoreData').value;
+  const ore = parseFloat(document.getElementById('contaoreOre').value);
+  if (!macchina) { showToast('⚠ Seleziona una macchina', '#ff6b35'); return; }
+  if (!data) { showToast('⚠ Seleziona una data', '#ff6b35'); return; }
+  if (isNaN(ore)) { showToast('⚠ Inserisci le ore', '#ff6b35'); return; }
+
+  const user = (await sb.auth.getUser()).data.user;
+  const record = {
+    user_id: user.id, macchina, data, ore,
+    note: document.getElementById('contaoreNote').value.trim()
+  };
+
+  try {
+    showSaving();
+    const { error } = await sb.from('contaore').insert(record);
+    if (error) throw error;
+    const { data: fresh } = await sb.from('contaore').select('*').order('data', { ascending: false });
+    contaoreData = fresh || [];
+    showToast('✓ Lettura contaore salvata');
+    document.getElementById('contaoreOre').value = '';
+    document.getElementById('contaoreNote').value = '';
+    renderContaoreStorico();
+  } catch (e) { showToast('⚠ Errore: ' + e.message, '#ff6b35'); }
+}
+
+function renderContaoreStorico() {
+  const c = document.getElementById('contaoreStoricoList');
+  if (!c) return;
+  if (!contaoreData.length) {
+    c.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:12px;">Nessuna lettura contaore.</div>';
+    return;
+  }
+
+  // Raggruppa per macchina e calcola delta ore
+  const byMacchina = {};
+  contaoreData.forEach(r => {
+    if (!byMacchina[r.macchina]) byMacchina[r.macchina] = [];
+    byMacchina[r.macchina].push(r);
+  });
+
+  let html = '';
+  Object.keys(byMacchina).sort().forEach(macchina => {
+    const readings = byMacchina[macchina].sort((a, b) => new Date(b.data) - new Date(a.data));
+    html += `<div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;margin:12px 0 6px;color:var(--accent);">⚙️ ${macchina}</div>`;
+    readings.forEach((r, i) => {
+      const prev = readings[i + 1];
+      const delta = prev ? (r.ore - prev.ore).toFixed(1) : '—';
+      html += `<div class="log-entry" style="padding:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:12px;font-weight:600;">${fmtData(r.data)}</div>
+            <div style="font-size:11px;color:var(--text-dim);">Contaore: ${r.ore}h${r.note ? ' · ' + r.note : ''}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:14px;font-weight:700;color:${delta !== '—' ? 'var(--accent)' : 'var(--text-muted)'};">${delta !== '—' ? '+' + delta + 'h' : '—'}</div>
+            <div style="font-size:10px;color:var(--text-muted);">da lettura prec.</div>
+          </div>
+        </div>
+        <div class="log-actions" style="margin-top:6px;">
+          <button class="log-act-btn del" onclick="deleteContaore('${r.id}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            Elimina
+          </button>
+        </div>
+      </div>`;
+    });
+  });
+  c.innerHTML = html;
+}
+
+async function deleteContaore(id) {
+  if (!confirm('Eliminare questa lettura?')) return;
+  try {
+    const { error } = await sb.from('contaore').delete().eq('id', id);
+    if (error) throw error;
+    contaoreData = contaoreData.filter(r => r.id !== id);
+    renderContaoreStorico();
+    showToast('✓ Lettura eliminata');
+  } catch (e) { showToast('⚠ Errore: ' + e.message, '#ff6b35'); }
+}
+
+// ── PRODUZIONE GAS: Salvataggio e Storico ─────────────────────────
+async function salvaProdGas() {
+  const data = document.getElementById('gasData').value;
+  if (!data) { showToast('⚠ Seleziona una data', '#ff6b35'); return; }
+  const gasRete = parseFloat(document.getElementById('gasRete').value) || null;
+  const biogasProdotto = parseFloat(document.getElementById('gasBiogas').value) || null;
+  if (!gasRete && !biogasProdotto) { showToast('⚠ Inserisci almeno un valore', '#ff6b35'); return; }
+
+  const user = (await sb.auth.getUser()).data.user;
+  const record = {
+    user_id: user.id, data,
+    gas_rete: gasRete, biogas_prodotto: biogasProdotto,
+    note: document.getElementById('gasNote').value.trim()
+  };
+
+  try {
+    showSaving();
+    const { error } = await sb.from('produzione_gas').insert(record);
+    if (error) throw error;
+    const { data: fresh } = await sb.from('produzione_gas').select('*').order('data', { ascending: false });
+    produzioneGasData = fresh || [];
+    showToast('✓ Lettura gas salvata');
+    document.getElementById('gasRete').value = '';
+    document.getElementById('gasBiogas').value = '';
+    document.getElementById('gasNote').value = '';
+    renderGasStorico();
+  } catch (e) { showToast('⚠ Errore: ' + e.message, '#ff6b35'); }
+}
+
+function renderGasStorico() {
+  const c = document.getElementById('gasStoricoList');
+  if (!c) return;
+  if (!produzioneGasData.length) {
+    c.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:12px;">Nessuna lettura gas.</div>';
+    return;
+  }
+
+  const sorted = [...produzioneGasData].sort((a, b) => new Date(b.data) - new Date(a.data));
+  c.innerHTML = sorted.map((r, i) => {
+    const prev = sorted[i + 1];
+    const deltaRete = (prev && r.gas_rete && prev.gas_rete) ? (r.gas_rete - prev.gas_rete).toFixed(1) : null;
+    return `<div class="log-entry" style="padding:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-size:12px;font-weight:600;">${fmtData(r.data)}</div>
+          <div style="font-size:11px;color:var(--text-dim);">
+            ${r.gas_rete != null ? 'Rete: ' + r.gas_rete.toLocaleString('it-IT') + ' Nm³' : ''}
+            ${r.biogas_prodotto != null ? ' · Biogas: ' + r.biogas_prodotto.toLocaleString('it-IT') + ' Nm³' : ''}
+            ${r.note ? ' · ' + r.note : ''}
+          </div>
+        </div>
+        ${deltaRete ? `<div style="text-align:right;">
+          <div style="font-size:14px;font-weight:700;color:var(--accent);">+${parseFloat(deltaRete).toLocaleString('it-IT')} Nm³</div>
+          <div style="font-size:10px;color:var(--text-muted);">prod. netta rete</div>
+        </div>` : ''}
+      </div>
+      <div class="log-actions" style="margin-top:6px;">
+        <button class="log-act-btn del" onclick="deleteProdGas('${r.id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          Elimina
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function deleteProdGas(id) {
+  if (!confirm('Eliminare questa lettura?')) return;
+  try {
+    const { error } = await sb.from('produzione_gas').delete().eq('id', id);
+    if (error) throw error;
+    produzioneGasData = produzioneGasData.filter(r => r.id !== id);
+    renderGasStorico();
+    showToast('✓ Lettura eliminata');
+  } catch (e) { showToast('⚠ Errore: ' + e.message, '#ff6b35'); }
 }
 
 // ── GRAFICI ───────────────────────────────────────────────────────────
