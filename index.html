@@ -760,7 +760,7 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
     <button class="chip reg-chip active" data-regsect="analisi" onclick="toggleRegChip('analisi',this)" style="background:var(--accent);color:#fff;border:none;padding:8px 14px;border-radius:20px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;">🧪 Analisi</button>
     <button class="chip reg-chip" data-regsect="contaore" onclick="toggleRegChip('contaore',this)" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:8px 14px;border-radius:20px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;">⚙️ Contaore</button>
-    <button class="chip reg-chip" data-regsect="gas" onclick="toggleRegChip('gas',this)" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:8px 14px;border-radius:20px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;">⛽ Produzione Gas</button>
+    <button class="chip reg-chip" data-regsect="gas" onclick="toggleRegChip('gas',this)" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:8px 14px;border-radius:20px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;">⛽ Produzione Biometano</button>
   </div>
 
   <!-- ── ANALISI ── -->
@@ -779,12 +779,26 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
         <label>Data</label>
         <input type="date" id="analisiData" style="margin-bottom:0;">
       </div>
-      <!-- Cisterna (solo percolato) -->
-      <div id="analisiCisternaWrap" style="margin-bottom:10px;display:none;">
-        <label>Cisterna</label>
-        <select id="analisiCisterna" style="margin-bottom:0;">
-          <option value="A">Cisterna A</option>
-          <option value="B">Cisterna B</option>
+      <!-- Punto di campionamento (biogas e percolato) -->
+      <div id="analisiPuntoWrap" style="margin-bottom:10px;">
+        <label>Punto di campionamento</label>
+        <select id="analisiPunto" style="margin-bottom:0;">
+          <optgroup label="Garage">
+            <option value="Garage 1">Garage 1</option>
+            <option value="Garage 2">Garage 2</option>
+            <option value="Garage 3">Garage 3</option>
+            <option value="Garage 4">Garage 4</option>
+            <option value="Garage 5">Garage 5</option>
+            <option value="Garage 6">Garage 6</option>
+            <option value="Garage 7">Garage 7</option>
+            <option value="Garage 8">Garage 8</option>
+            <option value="Garage 9">Garage 9</option>
+            <option value="Garage 10">Garage 10</option>
+          </optgroup>
+          <optgroup label="Cisterne">
+            <option value="Cisterna A">Cisterna A</option>
+            <option value="Cisterna B">Cisterna B</option>
+          </optgroup>
         </select>
       </div>
       <!-- Campi Biogas -->
@@ -797,6 +811,10 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
           <div><label>N₂ (%)</label><input type="number" inputmode="decimal" step="0.1" id="anBiogas_n2" style="margin-bottom:0;"></div>
           <div><label>O₂ (%)</label><input type="number" inputmode="decimal" step="0.1" id="anBiogas_o2" style="margin-bottom:0;"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+          <div><label>Portata (Nm³/h)</label><input type="number" inputmode="decimal" step="0.1" id="anBiogas_portata" style="margin-bottom:0;"></div>
+          <div><label>Biogas prodotto (Nm³/h media 24h)</label><input type="number" inputmode="decimal" step="0.1" id="anBiogas_prodotto" style="margin-bottom:0;"></div>
         </div>
       </div>
       <!-- Campi Percolato -->
@@ -832,14 +850,22 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
     <!-- Storico analisi -->
     <div class="card" style="margin-top:14px;">
       <div class="card-title">Storico analisi</div>
-      <div style="display:flex;gap:8px;margin-bottom:10px;">
-        <select id="analisiStoricoFiltro" onchange="renderAnalisiStorico()" style="margin-bottom:0;flex:1;">
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+        <select id="analisiStoricoFiltro" onchange="renderAnalisiStorico()" style="margin-bottom:0;flex:1;min-width:100px;">
           <option value="">Tutti i tipi</option>
           <option value="biogas">Biogas</option>
           <option value="percolato">Percolato</option>
           <option value="merceologica">Merceologica</option>
         </select>
-        <input type="date" id="analisiStoricoData" oninput="renderAnalisiStorico()" style="margin-bottom:0;flex:1;">
+        <select id="analisiStoricoPunto" onchange="renderAnalisiStorico()" style="margin-bottom:0;flex:1;min-width:100px;">
+          <option value="">Tutti i punti</option>
+          <option value="Garage 1">Garage 1</option><option value="Garage 2">Garage 2</option><option value="Garage 3">Garage 3</option>
+          <option value="Garage 4">Garage 4</option><option value="Garage 5">Garage 5</option><option value="Garage 6">Garage 6</option>
+          <option value="Garage 7">Garage 7</option><option value="Garage 8">Garage 8</option><option value="Garage 9">Garage 9</option>
+          <option value="Garage 10">Garage 10</option>
+          <option value="Cisterna A">Cisterna A</option><option value="Cisterna B">Cisterna B</option>
+        </select>
+        <input type="date" id="analisiStoricoData" oninput="renderAnalisiStorico()" style="margin-bottom:0;flex:1;min-width:120px;">
       </div>
       <div id="analisiStoricoList"></div>
     </div>
@@ -876,18 +902,14 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
   <!-- ── PRODUZIONE GAS ── -->
   <div id="regSect-gas" class="reg-section" style="display:none;">
     <div class="card">
-      <div class="card-title">Nuova lettura produzione gas</div>
+      <div class="card-title">Nuova lettura biometano in rete</div>
       <div style="margin-bottom:8px;">
         <label>Data</label>
         <input type="date" id="gasData" style="margin-bottom:0;">
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        <div><label>Gas in rete (Nm³) — cumulativo</label>
-          <input type="number" inputmode="decimal" step="0.1" id="gasRete" style="margin-bottom:0;">
-        </div>
-        <div><label>Biogas prodotto (Nm³)</label>
-          <input type="number" inputmode="decimal" step="0.1" id="gasBiogas" style="margin-bottom:0;">
-        </div>
+      <div>
+        <label>Biometano in rete (Nm³) — cumulativo</label>
+        <input type="number" inputmode="decimal" step="0.1" id="gasRete" style="margin-bottom:0;">
       </div>
       <div style="margin-top:8px;">
         <label>Note</label>
@@ -896,7 +918,7 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
       <button class="submit-btn" onclick="salvaProdGas()" style="margin-top:12px;">Salva lettura</button>
     </div>
     <div class="card" style="margin-top:14px;">
-      <div class="card-title">Storico produzione gas</div>
+      <div class="card-title">Storico biometano in rete</div>
       <div id="gasStoricoList"></div>
     </div>
   </div>
@@ -936,10 +958,23 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
     <canvas id="andTrendChart" height="220"></canvas>
   </div>
 
-  <!-- Trend produzione gas -->
+  <!-- Trend produzione biometano in rete -->
   <div class="card" style="margin-top:14px;">
-    <div class="card-title">⛽ Trend produzione gas</div>
+    <div class="card-title">⛽ Trend biometano in rete</div>
     <canvas id="andGasChart" height="200"></canvas>
+  </div>
+
+  <!-- Produzione biometano reale per punto (CH₄% × portata) -->
+  <div class="card" style="margin-top:14px;">
+    <div class="card-title">🔋 Produzione biometano per punto (CH₄% × portata)</div>
+    <div style="margin-bottom:8px;">
+      <label>Periodo</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <input type="date" id="andBiomDa" onchange="renderBiometanoPerPunto()" style="margin-bottom:0;">
+        <input type="date" id="andBiomA" onchange="renderBiometanoPerPunto()" style="margin-bottom:0;">
+      </div>
+    </div>
+    <canvas id="andBiometanoChart" height="250"></canvas>
   </div>
 </div>
 
@@ -2100,11 +2135,14 @@ function renderAndamento() {
   renderUltimeAnalisi();
   renderAndamentoGrafici();
   renderAndamentoGas();
+  renderBiometanoPerPunto();
   // Imposta date trend
   const now = new Date();
   const m3 = new Date(); m3.setMonth(m3.getMonth() - 3);
   if (document.getElementById('andTrendDa')) document.getElementById('andTrendDa').value = m3.toISOString().split('T')[0];
   if (document.getElementById('andTrendA')) document.getElementById('andTrendA').value = now.toISOString().split('T')[0];
+  if (document.getElementById('andBiomDa')) document.getElementById('andBiomDa').value = m3.toISOString().split('T')[0];
+  if (document.getElementById('andBiomA')) document.getElementById('andBiomA').value = now.toISOString().split('T')[0];
 }
 
 function renderAndamentoAlerts() {
@@ -2112,26 +2150,37 @@ function renderAndamentoAlerts() {
   if (!c) return;
   const alerts = [];
 
-  // Ultima analisi per tipo
-  ['biogas', 'percolato', 'merceologica'].forEach(tipo => {
-    const last = analisiData.filter(a => a.tipo === tipo).sort((a, b) => new Date(b.data) - new Date(a.data))[0];
+  // Biogas: controlla l'ultima analisi per OGNI punto di campionamento
+  const biogasItems = analisiData.filter(a => a.tipo === 'biogas');
+  const biogasPunti = [...new Set(biogasItems.map(a => a.cisterna).filter(Boolean))];
+  biogasPunti.forEach(punto => {
+    const last = biogasItems.filter(a => a.cisterna === punto).sort((a, b) => new Date(b.data) - new Date(a.data))[0];
     if (!last) return;
     const v = last.valori || {};
-
-    if (tipo === 'biogas') {
-      checkAlert(alerts, 'biogas_ch4', v.ch4, last.data, 'Biogas');
-      checkAlert(alerts, 'biogas_co2', v.co2, last.data, 'Biogas');
-      checkAlert(alerts, 'biogas_h2s', v.h2s, last.data, 'Biogas');
-      checkAlert(alerts, 'biogas_o2', v.o2, last.data, 'Biogas');
-    } else if (tipo === 'percolato') {
-      const label = last.cisterna ? 'Percolato Cist.' + last.cisterna : 'Percolato';
-      checkAlert(alerts, 'perc_ph', v.ph, last.data, label);
-      checkAlert(alerts, 'perc_cond', v.conducibilita, last.data, label);
-      checkAlert(alerts, 'perc_temp', v.temperatura, last.data, label);
-    } else if (tipo === 'merceologica') {
-      checkAlert(alerts, 'merc_digeribile', v.digeribile_perc, last.data, 'Merceologica');
-    }
+    const label = 'Biogas ' + punto;
+    checkAlert(alerts, 'biogas_ch4', v.ch4, last.data, label);
+    checkAlert(alerts, 'biogas_co2', v.co2, last.data, label);
+    checkAlert(alerts, 'biogas_h2s', v.h2s, last.data, label);
+    checkAlert(alerts, 'biogas_o2', v.o2, last.data, label);
   });
+
+  // Percolato: per ogni cisterna
+  const percItems = analisiData.filter(a => a.tipo === 'percolato');
+  const percPunti = [...new Set(percItems.map(a => a.cisterna).filter(Boolean))];
+  percPunti.forEach(punto => {
+    const last = percItems.filter(a => a.cisterna === punto).sort((a, b) => new Date(b.data) - new Date(a.data))[0];
+    if (!last) return;
+    const v = last.valori || {};
+    checkAlert(alerts, 'perc_ph', v.ph, last.data, punto);
+    checkAlert(alerts, 'perc_cond', v.conducibilita, last.data, punto);
+    checkAlert(alerts, 'perc_temp', v.temperatura, last.data, punto);
+  });
+
+  // Merceologica
+  const lastMerc = analisiData.filter(a => a.tipo === 'merceologica').sort((a, b) => new Date(b.data) - new Date(a.data))[0];
+  if (lastMerc) {
+    checkAlert(alerts, 'merc_digeribile', (lastMerc.valori||{}).digeribile_perc, lastMerc.data, 'Merceologica');
+  }
 
   if (!alerts.length) {
     c.innerHTML = '<div class="card" style="background:#e8f5e9;border-color:#a5d6a7;margin-bottom:14px;padding:12px;"><div style="font-size:13px;color:#2e7d32;font-weight:600;">✅ Tutti i parametri nella norma</div></div>';
@@ -2167,36 +2216,71 @@ function renderUltimeAnalisi() {
   if (!c) return;
 
   let html = '';
-  ['biogas', 'percolato', 'merceologica'].forEach(tipo => {
-    const items = analisiData.filter(a => a.tipo === tipo).sort((a, b) => new Date(b.data) - new Date(a.data));
-    const last = items[0];
-    const tipoLabel = { biogas: '🔬 Biogas', percolato: '🧪 Percolato', merceologica: '📊 Merceologica' }[tipo];
 
-    if (!last) {
-      html += `<div style="font-size:12px;color:var(--text-muted);padding:6px 0;">${tipoLabel}: nessuna analisi</div>`;
-      return;
-    }
+  // Biogas: mostra ultima analisi per ogni punto
+  const biogasAll = analisiData.filter(a => a.tipo === 'biogas');
+  const biogasPunti = [...new Set(biogasAll.map(a => a.cisterna).filter(Boolean))].sort();
+  if (biogasPunti.length) {
+    html += `<div style="font-size:12px;font-weight:700;margin-bottom:6px;">🔬 Biogas per punto (${biogasAll.length} analisi totali)</div>`;
+    biogasPunti.forEach(punto => {
+      const last = biogasAll.filter(a => a.cisterna === punto).sort((a, b) => new Date(b.data) - new Date(a.data))[0];
+      if (!last) return;
+      const v = last.valori || {};
+      const biometanoReale = (v.ch4 != null && v.portata != null) ? (v.ch4 / 100 * v.portata).toFixed(1) : null;
+      let detail = `CH₄:<b>${fmt(v.ch4)}%</b> · CO₂:<b>${fmt(v.co2)}%</b> · H₂S:<b>${fmt(v.h2s)}ppm</b>`;
+      if (v.portata != null) detail += ` · Port:<b>${fmt(v.portata)}</b>Nm³/h`;
+      if (v.biogas_prodotto != null) detail += ` · Prod:<b>${fmt(v.biogas_prodotto)}</b>Nm³/h`;
+      if (biometanoReale) detail += ` · <span style="color:var(--accent);font-weight:700;">Biometano: ${biometanoReale} Nm³/h</span>`;
+      html += `<div style="background:var(--surface2);border-radius:var(--rs);padding:8px 10px;margin-bottom:4px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
+          <span style="font-size:11px;font-weight:600;">${punto}</span>
+          <span style="font-size:10px;color:var(--text-muted);">${fmtData(last.data)}</span>
+        </div>
+        <div style="font-size:10px;color:var(--text-dim);">${detail}</div>
+      </div>`;
+    });
+  } else {
+    html += `<div style="font-size:12px;color:var(--text-muted);padding:6px 0;">🔬 Biogas: nessuna analisi</div>`;
+  }
 
+  // Percolato: per cisterna
+  const percAll = analisiData.filter(a => a.tipo === 'percolato');
+  const percPunti = [...new Set(percAll.map(a => a.cisterna).filter(Boolean))].sort();
+  if (percPunti.length) {
+    html += `<div style="font-size:12px;font-weight:700;margin:10px 0 6px;">🧪 Percolato (${percAll.length} analisi totali)</div>`;
+    percPunti.forEach(punto => {
+      const last = percAll.filter(a => a.cisterna === punto).sort((a, b) => new Date(b.data) - new Date(a.data))[0];
+      if (!last) return;
+      const v = last.valori || {};
+      let detail = `pH:<b>${fmt(v.ph)}</b> · Cond:<b>${fmt(v.conducibilita)}mS</b> · T:<b>${fmt(v.temperatura)}°C</b>`;
+      if (v.tac) detail += ` · TAC:<b>${fmt(v.tac)}</b>`;
+      html += `<div style="background:var(--surface2);border-radius:var(--rs);padding:8px 10px;margin-bottom:4px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
+          <span style="font-size:11px;font-weight:600;">${punto}</span>
+          <span style="font-size:10px;color:var(--text-muted);">${fmtData(last.data)}</span>
+        </div>
+        <div style="font-size:10px;color:var(--text-dim);">${detail}</div>
+      </div>`;
+    });
+  } else {
+    html += `<div style="font-size:12px;color:var(--text-muted);padding:6px 0;">🧪 Percolato: nessuna analisi</div>`;
+  }
+
+  // Merceologica
+  const mercAll = analisiData.filter(a => a.tipo === 'merceologica').sort((a, b) => new Date(b.data) - new Date(a.data));
+  if (mercAll.length) {
+    const last = mercAll[0];
     const v = last.valori || {};
-    let detail = '';
-    if (tipo === 'biogas') {
-      detail = `CH₄: <b>${fmt(v.ch4)}%</b> · CO₂: <b>${fmt(v.co2)}%</b> · H₂S: <b>${fmt(v.h2s)}ppm</b> · O₂: <b>${fmt(v.o2)}%</b>`;
-    } else if (tipo === 'percolato') {
-      detail = `Cist.${last.cisterna||'?'} · pH: <b>${fmt(v.ph)}</b> · Cond: <b>${fmt(v.conducibilita)}mS</b> · T: <b>${fmt(v.temperatura)}°C</b>`;
-      if (v.tac) detail += ` · TAC: <b>${fmt(v.tac)}</b>`;
-    } else {
-      detail = `Dig: <b>${fmt(v.digeribile_perc)}%</b> · Non dig: <b>${fmt(v.nondigeribile_perc)}%</b> · Legno: <b>${fmt(v.legno_perc)}%</b>`;
-    }
-
-    const nAnalisi = items.length;
-    html += `<div style="background:var(--surface2);border-radius:var(--rs);padding:10px;margin-bottom:8px;">
+    html += `<div style="background:var(--surface2);border-radius:var(--rs);padding:10px;margin-top:10px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-        <span style="font-size:12px;font-weight:700;">${tipoLabel}</span>
-        <span style="font-size:10px;color:var(--text-muted);">${fmtData(last.data)} · ${nAnalisi} totali</span>
+        <span style="font-size:12px;font-weight:700;">📊 Merceologica</span>
+        <span style="font-size:10px;color:var(--text-muted);">${fmtData(last.data)} · ${mercAll.length} totali</span>
       </div>
-      <div style="font-size:11px;color:var(--text-dim);">${detail}</div>
+      <div style="font-size:11px;color:var(--text-dim);">Dig: <b>${fmt(v.digeribile_perc)}%</b> · Non dig: <b>${fmt(v.nondigeribile_perc)}%</b> · Legno: <b>${fmt(v.legno_perc)}%</b></div>
     </div>`;
-  });
+  } else {
+    html += `<div style="font-size:12px;color:var(--text-muted);padding:6px 0;">📊 Merceologica: nessuna analisi</div>`;
+  }
 
   c.innerHTML = html;
 }
@@ -2260,18 +2344,15 @@ function renderAndamentoGas() {
 
   const labels = [];
   const prodNetta = [];
-  const biogasValues = [];
 
   for (let i = 1; i < sorted.length; i++) {
     const curr = sorted[i], prev = sorted[i - 1];
     labels.push(fmtData(curr.data));
     prodNetta.push(curr.gas_rete && prev.gas_rete ? +(curr.gas_rete - prev.gas_rete).toFixed(1) : null);
-    biogasValues.push(curr.biogas_prodotto ?? null);
   }
 
   const datasets = [];
-  if (prodNetta.some(v => v != null)) datasets.push({ label: 'Prod. netta rete (Nm³)', data: prodNetta, borderColor: '#2e7d32', backgroundColor: 'rgba(46,125,50,0.1)', fill: true, tension: 0.3 });
-  if (biogasValues.some(v => v != null)) datasets.push({ label: 'Biogas prodotto (Nm³)', data: biogasValues, borderColor: '#e65100', backgroundColor: 'transparent', tension: 0.3, borderDash: [5, 5] });
+  if (prodNetta.some(v => v != null)) datasets.push({ label: 'Biometano netto in rete (Nm³)', data: prodNetta, borderColor: '#2e7d32', backgroundColor: 'rgba(46,125,50,0.1)', fill: true, tension: 0.3 });
 
   if (!datasets.length) return;
 
@@ -2283,7 +2364,71 @@ function renderAndamentoGas() {
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// REGISTRO IMPIANTO — Analisi, Contaore, Produzione Gas
+// ANDAMENTO — Grafico produzione biometano reale per punto
+// ══════════════════════════════════════════════════════════════════════
+let andBiometanoChartInstance = null;
+function renderBiometanoPerPunto() {
+  if (typeof Chart === 'undefined') return;
+  const ctx = document.getElementById('andBiometanoChart');
+  if (!ctx) return;
+  if (andBiometanoChartInstance) andBiometanoChartInstance.destroy();
+
+  const da = document.getElementById('andBiomDa')?.value || '';
+  const a = document.getElementById('andBiomA')?.value || '';
+
+  // Filtra solo analisi biogas con ch4 e portata disponibili
+  let items = analisiData.filter(r => r.tipo === 'biogas' && r.cisterna && r.valori?.ch4 != null && r.valori?.portata != null);
+  if (da) items = items.filter(r => r.data >= da);
+  if (a) items = items.filter(r => r.data <= a);
+  items.sort((x, y) => new Date(x.data) - new Date(y.data));
+
+  if (!items.length) { andBiometanoChartInstance = null; return; }
+
+  // Raggruppa per punto
+  const punti = [...new Set(items.map(r => r.cisterna))].sort();
+  // Date uniche ordinate
+  const dateUniche = [...new Set(items.map(r => r.data))].sort();
+  const labels = dateUniche.map(d => fmtData(d));
+
+  const colori = ['#2e7d32','#e65100','#00838f','#6a1b9a','#c62828','#1565c0','#f9a825','#00695c','#ad1457','#4527a0','#ef6c00','#1b5e20'];
+  const datasets = punti.map((punto, i) => {
+    const puntoItems = items.filter(r => r.cisterna === punto);
+    const data = dateUniche.map(d => {
+      const r = puntoItems.find(x => x.data === d);
+      if (!r) return null;
+      // Biometano reale = CH₄% / 100 × portata Nm³/h
+      return +((r.valori.ch4 / 100) * r.valori.portata).toFixed(2);
+    });
+    return {
+      label: punto,
+      data,
+      borderColor: colori[i % colori.length],
+      backgroundColor: 'transparent',
+      tension: 0.3,
+      pointRadius: 4,
+      spanGaps: true
+    };
+  });
+
+  andBiometanoChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 9 }, boxWidth: 12 } },
+        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + (ctx.parsed.y != null ? ctx.parsed.y.toFixed(1) + ' Nm³/h' : '—') } }
+      },
+      scales: {
+        x: { ticks: { font: { size: 9 }, maxRotation: 45 } },
+        y: { title: { display: true, text: 'Nm³/h biometano', font: { size: 10 } }, ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// REGISTRO IMPIANTO — Analisi, Contaore, Produzione Biometano
 // ══════════════════════════════════════════════════════════════════════
 
 function toggleRegChip(sect, btn) {
@@ -2333,7 +2478,24 @@ function toggleAnalisiFields() {
   document.getElementById('analisiBiogasFields').style.display = tipo === 'biogas' ? 'block' : 'none';
   document.getElementById('analisiPercolatoFields').style.display = tipo === 'percolato' ? 'block' : 'none';
   document.getElementById('analisiMerceologicaFields').style.display = tipo === 'merceologica' ? 'block' : 'none';
-  document.getElementById('analisiCisternaWrap').style.display = tipo === 'percolato' ? 'block' : 'none';
+  // Punto campionamento: visibile per biogas e percolato, nascosto per merceologica
+  const puntoWrap = document.getElementById('analisiPuntoWrap');
+  const puntoSel = document.getElementById('analisiPunto');
+  if (tipo === 'merceologica') {
+    puntoWrap.style.display = 'none';
+  } else {
+    puntoWrap.style.display = 'block';
+    // Per percolato: mostra solo cisterne. Per biogas: mostra tutto
+    const opts = puntoSel.querySelectorAll('optgroup');
+    opts.forEach(og => {
+      if (og.label === 'Garage') og.style.display = tipo === 'percolato' ? 'none' : '';
+      if (og.label === 'Cisterne') og.style.display = '';
+    });
+    // Se percolato e il valore corrente è un garage, resetta a Cisterna A
+    if (tipo === 'percolato' && puntoSel.value.startsWith('Garage')) {
+      puntoSel.value = 'Cisterna A';
+    }
+  }
 }
 
 function calcMercPerc() {
@@ -2362,7 +2524,9 @@ async function salvaAnalisi() {
       co2: parseFloat(document.getElementById('anBiogas_co2').value) || null,
       h2s: parseFloat(document.getElementById('anBiogas_h2s').value) || null,
       n2: parseFloat(document.getElementById('anBiogas_n2').value) || null,
-      o2: parseFloat(document.getElementById('anBiogas_o2').value) || null
+      o2: parseFloat(document.getElementById('anBiogas_o2').value) || null,
+      portata: parseFloat(document.getElementById('anBiogas_portata').value) || null,
+      biogas_prodotto: parseFloat(document.getElementById('anBiogas_prodotto').value) || null
     };
   } else if (tipo === 'percolato') {
     valori = {
@@ -2388,11 +2552,12 @@ async function salvaAnalisi() {
   }
 
   const user = (await sb.auth.getUser()).data.user;
+  const punto = (tipo === 'biogas' || tipo === 'percolato') ? document.getElementById('analisiPunto').value : null;
   const record = {
     user_id: user.id,
     tipo,
     data,
-    cisterna: tipo === 'percolato' ? document.getElementById('analisiCisterna').value : null,
+    cisterna: punto,
     valori,
     note: document.getElementById('analisiNote').value.trim()
   };
@@ -2414,7 +2579,7 @@ async function salvaAnalisi() {
 }
 
 function clearAnalisiForm() {
-  ['anBiogas_ch4','anBiogas_co2','anBiogas_h2s','anBiogas_n2','anBiogas_o2',
+  ['anBiogas_ch4','anBiogas_co2','anBiogas_h2s','anBiogas_n2','anBiogas_o2','anBiogas_portata','anBiogas_prodotto',
    'anPerc_ph','anPerc_cond','anPerc_temp','anPerc_tac','anPerc_tampone','anPerc_azoto',
    'anMerc_digeribile','anMerc_nondigeribile','anMerc_legno'].forEach(id => {
     const el = document.getElementById(id);
@@ -2429,10 +2594,12 @@ function renderAnalisiStorico() {
   const c = document.getElementById('analisiStoricoList');
   if (!c) return;
   const filtroTipo = document.getElementById('analisiStoricoFiltro')?.value || '';
+  const filtroPunto = document.getElementById('analisiStoricoPunto')?.value || '';
   const filtroData = document.getElementById('analisiStoricoData')?.value || '';
 
   let items = [...analisiData];
   if (filtroTipo) items = items.filter(a => a.tipo === filtroTipo);
+  if (filtroPunto) items = items.filter(a => a.cisterna === filtroPunto);
   if (filtroData) items = items.filter(a => a.data === filtroData);
 
   if (!items.length) {
@@ -2444,7 +2611,10 @@ function renderAnalisiStorico() {
     const v = a.valori || {};
     let dettaglio = '';
     if (a.tipo === 'biogas') {
-      dettaglio = ['CH₄:'+fmt(v.ch4)+'%','CO₂:'+fmt(v.co2)+'%','H₂S:'+fmt(v.h2s)+'ppm','N₂:'+fmt(v.n2)+'%','O₂:'+fmt(v.o2)+'%'].filter(s=>!s.includes('null')).join(' · ');
+      let parts = ['CH₄:'+fmt(v.ch4)+'%','CO₂:'+fmt(v.co2)+'%','H₂S:'+fmt(v.h2s)+'ppm','N₂:'+fmt(v.n2)+'%','O₂:'+fmt(v.o2)+'%'];
+      if (v.portata != null) parts.push('Portata:'+fmt(v.portata)+' Nm³/h');
+      if (v.biogas_prodotto != null) parts.push('Prod:'+fmt(v.biogas_prodotto)+' Nm³/h');
+      dettaglio = parts.filter(s=>!s.includes('null')).join(' · ');
     } else if (a.tipo === 'percolato') {
       let parts = ['pH:'+fmt(v.ph),'Cond:'+fmt(v.conducibilita)+'mS','T:'+fmt(v.temperatura)+'°C'];
       if (v.tac) parts.push('TAC:'+fmt(v.tac));
@@ -2455,7 +2625,7 @@ function renderAnalisiStorico() {
       dettaglio = `Dig:${fmt(v.digeribile_kg)}kg (${fmt(v.digeribile_perc)}%) · Non dig:${fmt(v.nondigeribile_kg)}kg (${fmt(v.nondigeribile_perc)}%) · Legno:${fmt(v.legno_kg)}kg (${fmt(v.legno_perc)}%)`;
     }
     const tipoLabel = {biogas:'🔬 Biogas',percolato:'🧪 Percolato',merceologica:'📊 Merceologica'}[a.tipo]||a.tipo;
-    const cisternaLabel = a.cisterna ? ` — Cisterna ${a.cisterna}` : '';
+    const cisternaLabel = a.cisterna ? ` — ${a.cisterna}` : '';
     return `<div class="log-entry">
       <div class="log-hdr">
         <div><div class="log-date">${fmtData(a.data)} — ${tipoLabel}${cisternaLabel}</div></div>
@@ -2574,13 +2744,12 @@ async function salvaProdGas() {
   const data = document.getElementById('gasData').value;
   if (!data) { showToast('⚠ Seleziona una data', '#ff6b35'); return; }
   const gasRete = parseFloat(document.getElementById('gasRete').value) || null;
-  const biogasProdotto = parseFloat(document.getElementById('gasBiogas').value) || null;
-  if (!gasRete && !biogasProdotto) { showToast('⚠ Inserisci almeno un valore', '#ff6b35'); return; }
+  if (!gasRete) { showToast('⚠ Inserisci il valore cumulativo', '#ff6b35'); return; }
 
   const user = (await sb.auth.getUser()).data.user;
   const record = {
     user_id: user.id, data,
-    gas_rete: gasRete, biogas_prodotto: biogasProdotto,
+    gas_rete: gasRete, biogas_prodotto: null,
     note: document.getElementById('gasNote').value.trim()
   };
 
@@ -2592,7 +2761,6 @@ async function salvaProdGas() {
     produzioneGasData = fresh || [];
     showToast('✓ Lettura gas salvata');
     document.getElementById('gasRete').value = '';
-    document.getElementById('gasBiogas').value = '';
     document.getElementById('gasNote').value = '';
     renderGasStorico();
   } catch (e) { showToast('⚠ Errore: ' + e.message, '#ff6b35'); }
@@ -2615,14 +2783,13 @@ function renderGasStorico() {
         <div>
           <div style="font-size:12px;font-weight:600;">${fmtData(r.data)}</div>
           <div style="font-size:11px;color:var(--text-dim);">
-            ${r.gas_rete != null ? 'Rete: ' + r.gas_rete.toLocaleString('it-IT') + ' Nm³' : ''}
-            ${r.biogas_prodotto != null ? ' · Biogas: ' + r.biogas_prodotto.toLocaleString('it-IT') + ' Nm³' : ''}
+            ${r.gas_rete != null ? 'Biometano in rete: ' + r.gas_rete.toLocaleString('it-IT') + ' Nm³' : ''}
             ${r.note ? ' · ' + r.note : ''}
           </div>
         </div>
         ${deltaRete ? `<div style="text-align:right;">
           <div style="font-size:14px;font-weight:700;color:var(--accent);">+${parseFloat(deltaRete).toLocaleString('it-IT')} Nm³</div>
-          <div style="font-size:10px;color:var(--text-muted);">prod. netta rete</div>
+          <div style="font-size:10px;color:var(--text-muted);">prod. netta biometano</div>
         </div>` : ''}
       </div>
       <div class="log-actions" style="margin-top:6px;">
