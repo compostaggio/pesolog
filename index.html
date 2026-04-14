@@ -60,9 +60,10 @@ body{font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);min-
 .logout-btn:hover{background:#fff3ee;}
 
 /* ── NAV ── */
-.nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);box-shadow:0 -1px 4px rgba(0,0,0,.06);display:flex;z-index:50;}
-.nb{flex:1;padding:12px 4px;background:none;border:none;color:var(--text-muted);font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;transition:.2s;}
-.nb svg{width:20px;height:20px;}
+.nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);box-shadow:0 -1px 4px rgba(0,0,0,.06);display:flex;z-index:50;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.nav::-webkit-scrollbar{display:none;}
+.nb{flex:0 0 auto;min-width:64px;padding:10px 8px;background:none;border:none;color:var(--text-muted);font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;transition:.2s;white-space:nowrap;}
+.nb svg{width:18px;height:18px;}
 .nb.active{color:var(--accent);}
 
 /* ── PAGES ── */
@@ -538,6 +539,10 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
         Stampa report digestori PDF
       </button>
+      <button class="export-btn" onclick="excelDigestori()" style="margin-top:0;border-color:#2e7d32;color:#2e7d32;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Scarica digestori Excel
+      </button>
     </div>
   </div>
 </div>
@@ -620,6 +625,7 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
     </div>
   </div>
   <div class="card"><div class="card-title">📦 Depositi correnti</div><div id="depositiList"></div></div>
+  <button class="submit-btn" onclick="exportDepositiExcel()" style="margin-top:12px;width:100%;">📥 Scarica Excel depositi</button>
 </div>
 
 <!-- PAGE: SCENARI -->
@@ -2084,6 +2090,65 @@ function renderDepositi() {
   renderPrevisione();
 }
 
+function exportDepositiExcel() {
+  const {r, c} = getDepFiltered();
+  const dep = calcDepositi(r, c);
+  const da = document.getElementById('depDa')?.value || '—';
+  const a = document.getElementById('depA')?.value || '—';
+
+  // Foglio 1: Riepilogo depositi
+  const depRows = [
+    ['RIEPILOGO DEPOSITI', '', ''],
+    ['Periodo', da + ' — ' + a, ''],
+    ['', '', ''],
+    ['Materiale', 'Deposito (kg)', 'Deposito (t)'],
+    ['Sovvallo', dep.sovvallo, +(dep.sovvallo/1000).toFixed(2)],
+    ['Inoculo', dep.inoculo, +(dep.inoculo/1000).toFixed(2)],
+    ['Organico', dep.organico, +(dep.organico/1000).toFixed(2)],
+    ['', '', ''],
+    ['DETTAGLIO MOVIMENTI', '', ''],
+    ['', 'kg', 't'],
+    ['Sovvallo prodotto', dep.sovvalloProd, +(dep.sovvalloProd/1000).toFixed(2)],
+    ['Sovvallo fossa (50x50)', dep.sovvalloFossa, +(dep.sovvalloFossa/1000).toFixed(2)],
+    ['Sovvallo camion', dep.sovvalloCamion, +(dep.sovvalloCamion/1000).toFixed(2)],
+    ['Vagliatura', dep.vagliatura, +(dep.vagliatura/1000).toFixed(2)],
+    ['Inoculo prodotto', dep.inoculoProd, +(dep.inoculoProd/1000).toFixed(2)],
+    ['Inoculo riutilizzato', dep.inoculoRiut, +(dep.inoculoRiut/1000).toFixed(2)],
+    ['Organico lavorato', dep.orgLavorato, +(dep.orgLavorato/1000).toFixed(2)],
+    ['Organico conferito', dep.confTot, +(dep.confTot/1000).toFixed(2)]
+  ];
+  if (dep.diSovvallo || dep.diInoculo || dep.diOrganico) {
+    depRows.push(['', '', ''], ['DEPOSITO INIZIALE', '', '']);
+    depRows.push(['Sovvallo iniziale', dep.diSovvallo, +(dep.diSovvallo/1000).toFixed(2)]);
+    depRows.push(['Inoculo iniziale', dep.diInoculo, +(dep.diInoculo/1000).toFixed(2)]);
+    depRows.push(['Organico iniziale', dep.diOrganico, +(dep.diOrganico/1000).toFixed(2)]);
+  }
+
+  // Foglio 2: Conferimenti
+  const confFiltered = conferimenti.filter(x => {
+    if (da !== '—' && x.al < da) return false;
+    if (a !== '—' && x.dal > a) return false;
+    return true;
+  });
+  const confRows = [['Dal', 'Al', 'Quantità (kg)', 'Quantità (t)']];
+  confFiltered.forEach(x => {
+    confRows.push([x.dal, x.al, x.qta, +(x.qta/1000).toFixed(2)]);
+  });
+  confRows.push(['', '', '', '']);
+  confRows.push(['TOTALE', '', confFiltered.reduce((s,x)=>s+x.qta,0), +(confFiltered.reduce((s,x)=>s+x.qta,0)/1000).toFixed(2)]);
+
+  const wsDep = XLSX.utils.aoa_to_sheet(depRows);
+  wsDep['!cols'] = [{wch:25},{wch:15},{wch:15}];
+  const wsConf = XLSX.utils.aoa_to_sheet(confRows);
+  wsConf['!cols'] = [{wch:12},{wch:12},{wch:15},{wch:15}];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, wsDep, 'Depositi');
+  XLSX.utils.book_append_sheet(wb, wsConf, 'Conferimenti');
+  XLSX.writeFile(wb, `pesolog_depositi_${new Date().toISOString().split('T')[0]}.xlsx`);
+  showToast('✓ Excel depositi scaricato');
+}
+
 // ══════════════════════════════════════════════════════════════════════
 // ANDAMENTO IMPIANTO — Dashboard, Alert, Grafici trend
 // ══════════════════════════════════════════════════════════════════════
@@ -3021,6 +3086,46 @@ function stampaDigestori(){
   const righe=cicli.map((c,i)=>`<tr style="background:${i%2===0?'#f9f9f9':'#fff'}"><td style="padding:10px 12px;border:1px solid #ddd;font-weight:600;">${new Date(c.dataFine+'T12:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'})}</td><td style="padding:10px 12px;border:1px solid #ddd;font-weight:700;">${c.dige}</td><td style="padding:10px 12px;border:1px solid #ddd;text-align:right;font-weight:700;">${fmtPeso(c.totKg)}</td><td style="padding:10px 12px;border:1px solid #ddd;text-align:right;color:#666;">${totale>0?(c.totKg/totale*100).toFixed(1)+'%':'-'}</td></tr>`).join('');
   document.getElementById('printArea').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;border-bottom:2px solid #000;padding-bottom:12px;"><div><div style="font-size:22px;font-weight:800;letter-spacing:-1px;">PESO<span style="color:#666">LOG</span></div><div style="font-size:14px;font-weight:700;margin-top:4px;color:#333;">Report Carico Digestori</div></div><div style="text-align:right;font-size:12px;color:#666;"><div><strong>Periodo:</strong> ${periodoStr}</div><div>Stampato: ${now}</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:24px;"><div style="border:1px solid #ddd;border-radius:8px;padding:12px;"><div style="font-size:10px;color:#888;text-transform:uppercase;margin-bottom:4px;">Totale caricato</div><div style="font-size:20px;font-weight:800;">${fmtPeso(totale)}</div></div><div style="border:1px solid #ddd;border-radius:8px;padding:12px;"><div style="font-size:10px;color:#888;text-transform:uppercase;margin-bottom:4px;">Cicli di carico</div><div style="font-size:20px;font-weight:800;">${cicli.length}</div></div><div style="border:1px solid #ddd;border-radius:8px;padding:12px;"><div style="font-size:10px;color:#888;text-transform:uppercase;margin-bottom:4px;">Digestori</div><div style="font-size:20px;font-weight:800;">${new Set(cicli.map(c=>c.dige)).size}</div></div></div><table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr style="background:#1a1a1a;color:#fff;"><th style="padding:10px 12px;text-align:left;border:1px solid #333;">Data fine carico</th><th style="padding:10px 12px;text-align:left;border:1px solid #333;">Digestore</th><th style="padding:10px 12px;text-align:right;border:1px solid #333;">Quantità</th><th style="padding:10px 12px;text-align:right;border:1px solid #333;">%</th></tr></thead><tbody>${righe}</tbody><tfoot><tr style="background:#f0f0f0;font-weight:700;"><td style="padding:10px 12px;border:1px solid #ddd;" colspan="2">TOTALE</td><td style="padding:10px 12px;border:1px solid #ddd;text-align:right;">${fmtPeso(totale)}</td><td style="padding:10px 12px;border:1px solid #ddd;text-align:right;">100%</td></tr></tfoot></table>`;
   window.print();
+}
+
+function excelDigestori(){
+  const da=document.getElementById('filterDa').value;const a=document.getElementById('filterA').value;const f=getFiltered();
+  if(!f.length){showToast('⚠ Nessun dato nel periodo','#ff6b35');return;}
+  const digeCarichi={};
+  f.forEach(r=>r.materiali.forEach(m=>{const nl=m.nome.toLowerCase();const aVal=(m.a||'').toLowerCase();if(nl.includes('organico')&&aVal.includes('dige')){const dige=(m.a||'').trim();if(!digeCarichi[dige])digeCarichi[dige]=[];digeCarichi[dige].push({data:r.data,kg:m.peso||0});}}));
+  if(!Object.keys(digeCarichi).length){showToast('⚠ Nessun carico digestore nel periodo','#ff6b35');return;}
+  const GAP=7;const cicli=[];
+  Object.entries(digeCarichi).forEach(([dige,carichi])=>{carichi.sort((a,b)=>a.data.localeCompare(b.data));let cicloKg=0,ultimaData=null,dataFineCiclo=null;carichi.forEach((c,i)=>{if(ultimaData===null){cicloKg=c.kg;ultimaData=c.data;dataFineCiclo=c.data;}else{const diff=(new Date(c.data)-new Date(ultimaData))/86400000;if(diff>GAP){cicli.push({dige,dataFine:dataFineCiclo,totKg:cicloKg});cicloKg=c.kg;dataFineCiclo=c.data;}else{cicloKg+=c.kg;dataFineCiclo=c.data;}ultimaData=c.data;}if(i===carichi.length-1)cicli.push({dige,dataFine:dataFineCiclo,totKg:cicloKg});});});
+  cicli.sort((a,b)=>a.dataFine.localeCompare(b.dataFine)||a.dige.localeCompare(b.dige));
+  const totale=cicli.reduce((s,c)=>s+c.totKg,0);
+
+  // Foglio 1: Cicli di carico
+  const header=['Data fine carico','Digestore','Quantità (kg)','Quantità (t)','%'];
+  const rows=cicli.map(c=>[c.dataFine,c.dige,c.totKg,+(c.totKg/1000).toFixed(2),totale>0?+((c.totKg/totale*100).toFixed(1)):0]);
+  rows.push([]);
+  rows.push(['TOTALE','',totale,+(totale/1000).toFixed(2),'100%']);
+  const ws=XLSX.utils.aoa_to_sheet([header,...rows]);
+  ws['!cols']=[{wch:16},{wch:18},{wch:14},{wch:14},{wch:8}];
+
+  // Foglio 2: Dettaglio giornaliero
+  const detHeader=['Data','Digestore','Peso (kg)','Peso (t)'];
+  const detRows=[];
+  Object.entries(digeCarichi).sort().forEach(([dige,carichi])=>{
+    carichi.sort((a,b)=>a.data.localeCompare(b.data)).forEach(c=>{
+      detRows.push([c.data,dige,c.kg,+(c.kg/1000).toFixed(2)]);
+    });
+  });
+  detRows.push([]);
+  detRows.push(['TOTALE','',totale,+(totale/1000).toFixed(2)]);
+  const wsDet=XLSX.utils.aoa_to_sheet([detHeader,...detRows]);
+  wsDet['!cols']=[{wch:12},{wch:18},{wch:12},{wch:12}];
+
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Cicli carico');
+  XLSX.utils.book_append_sheet(wb,wsDet,'Dettaglio giornaliero');
+  const periodo=da&&a?`_${da}_${a}`:'';
+  XLSX.writeFile(wb,`pesolog_digestori${periodo}.xlsx`);
+  showToast('✓ Excel digestori scaricato');
 }
 
 function stampaPrevisione(){
