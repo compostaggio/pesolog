@@ -259,6 +259,21 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
   </div>
 </div>
 
+<!-- ══ RESET PASSWORD ═════════════════════════════════════════════════ -->
+<div class="login-screen" id="resetScreen">
+  <div class="login-card">
+    <div class="login-logo">PESO<span>LOG</span></div>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:28px;">Imposta la nuova password</div>
+    <label>Nuova password</label>
+    <input type="password" id="resetPassword" placeholder="Minimo 10 caratteri" autocomplete="new-password">
+    <label>Conferma password</label>
+    <input type="password" id="resetPassword2" placeholder="Ripeti la password" autocomplete="new-password"
+      onkeydown="if(event.key==='Enter')doResetPassword()">
+    <div id="resetError" style="color:var(--accent2);font-size:12px;min-height:20px;margin-bottom:10px;"></div>
+    <button class="submit-btn" onclick="doResetPassword()">SALVA NUOVA PASSWORD</button>
+  </div>
+</div>
+
 <!-- ══ APP ═══════════════════════════════════════════════════════════ -->
 <div id="appContent" style="display:none;">
 
@@ -1135,6 +1150,15 @@ let produzioneGasData = [];
 // AUTH
 // ══════════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
+  // Intercetta il token di recovery nel fragment URL (link da email reset password)
+  sb.auth.onAuthStateChange((event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      document.getElementById('loadingScreen').style.display = 'none';
+      document.getElementById('loginScreen').style.display   = 'none';
+      document.getElementById('resetScreen').style.display   = 'flex';
+    }
+  });
+
   try {
     const { data:{ session } } = await sb.auth.getSession();
     if (session) {
@@ -1150,6 +1174,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     showLoginScreen();
   }
 });
+
+async function doResetPassword() {
+  const p1    = document.getElementById('resetPassword').value;
+  const p2    = document.getElementById('resetPassword2').value;
+  const errEl = document.getElementById('resetError');
+  errEl.textContent = '';
+
+  if (!p1 || !p2)        { errEl.textContent = '⚠ Compila entrambi i campi'; return; }
+  if (p1 !== p2)         { errEl.textContent = '⚠ Le password non coincidono'; return; }
+  if (p1.length < 10)    { errEl.textContent = '⚠ La password deve essere di almeno 10 caratteri'; return; }
+
+  const { error } = await sb.auth.updateUser({ password: p1 });
+  if (error) {
+    errEl.textContent = '⚠ Errore: ' + error.message;
+    return;
+  }
+
+  // Password aggiornata: mostra conferma e porta al login dopo 2 secondi
+  document.getElementById('resetScreen').innerHTML = `
+    <div class="login-card" style="text-align:center;">
+      <div class="login-logo" style="margin-bottom:16px;">PESO<span>LOG</span></div>
+      <div style="font-size:32px;margin-bottom:12px;">✓</div>
+      <div style="font-size:14px;color:var(--accent);font-weight:600;margin-bottom:8px;">Password aggiornata</div>
+      <div style="font-size:12px;color:var(--text-dim);">Reindirizzamento al login...</div>
+    </div>`;
+  setTimeout(() => {
+    document.getElementById('resetScreen').style.display = 'none';
+    showLoginScreen();
+  }, 2000);
+}
 
 async function doLogin() {
   const email    = document.getElementById('loginEmail').value.trim();
