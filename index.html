@@ -771,6 +771,13 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
 
   <!-- ── ANALISI ── -->
   <div id="regSect-analisi" class="reg-section">
+
+    <!-- STATO SETTIMANALE BIOGAS -->
+    <div class="card" id="statoSettimanaleCard" style="margin-bottom:14px;">
+      <div class="card-title" style="margin-bottom:8px;">📍 Stato giro questa settimana</div>
+      <div id="statoSettimanaleGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;"></div>
+    </div>
+
     <div class="card">
       <div class="card-title">Nuova analisi</div>
       <div style="margin-bottom:10px;">
@@ -780,6 +787,19 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
           <option value="percolato">Percolato</option>
           <option value="merceologica">Merceologica</option>
         </select>
+      </div>
+      <!-- Toggle modalità (solo biogas) -->
+      <div id="analisiModoWrap" style="margin-bottom:12px;">
+        <div style="display:flex;gap:6px;">
+          <button id="btnModeSingola" onclick="setAnalisiMode('singola')"
+            style="flex:1;padding:8px;border-radius:20px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;background:var(--accent);color:#fff;border:none;">
+            ✏️ Singola
+          </button>
+          <button id="btnModeGiro" onclick="setAnalisiMode('giro')"
+            style="flex:1;padding:8px;border-radius:20px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;background:var(--surface2);color:var(--text);border:1px solid var(--border);">
+            ⚡ Giro rapido
+          </button>
+        </div>
       </div>
       <div style="margin-bottom:10px;">
         <label>Data</label>
@@ -847,11 +867,37 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
         </div>
         <div id="mercPercResult" style="font-size:12px;color:var(--accent);margin-top:8px;font-weight:600;"></div>
       </div>
-      <div style="margin-top:10px;">
-        <label>Note</label>
-        <textarea id="analisiNote" rows="2" placeholder="Note opzionali..." style="margin-bottom:0;"></textarea>
+      <div id="analisiSingolaBottom">
+        <div style="margin-top:10px;">
+          <label>Note</label>
+          <textarea id="analisiNote" rows="2" placeholder="Note opzionali..." style="margin-bottom:0;"></textarea>
+        </div>
+        <button class="submit-btn" onclick="salvaAnalisi()" style="margin-top:12px;">Salva analisi</button>
       </div>
-      <button class="submit-btn" onclick="salvaAnalisi()" style="margin-top:12px;">Salva analisi</button>
+
+      <!-- ── GIRO RAPIDO ── -->
+      <div id="analisiGiroWrap" style="display:none;">
+        <div style="margin-bottom:10px;">
+          <label>Data giro</label>
+          <input type="date" id="giroData" style="margin-bottom:0;">
+        </div>
+        <div id="giroBozzaBanner" style="display:none;background:#fff3e0;border:1px solid #ffcc80;border-radius:8px;padding:10px;margin-bottom:10px;font-size:12px;">
+          ⚠️ Hai una bozza non inviata.
+          <button onclick="caricaBozzaGiro_apply()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-weight:600;padding:0 6px;">Recupera</button>
+          <button onclick="cancellaBozzaGiro()" style="background:none;border:none;color:#e65100;cursor:pointer;font-weight:600;padding:0 6px;">Scarta</button>
+        </div>
+        <!-- Griglia scrollabile orizzontalmente -->
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:4px;">
+          <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px;white-space:nowrap;min-width:540px;display:grid;grid-template-columns:90px 62px 62px 62px 62px 62px 62px;gap:4px;">
+            <div>Punto</div><div>CH₄%</div><div>CO₂%</div><div>H₂S ppm</div><div>Port.</div><div>Prod.</div><div>O₂%</div>
+          </div>
+          <div id="giroRapidoRows" style="min-width:540px;"></div>
+        </div>
+        <div style="font-size:10px;color:var(--text-muted);margin-bottom:10px;">
+          📱 Scorri a destra per vedere tutti i campi · Lascia vuoti i punti non misurati
+        </div>
+        <button class="submit-btn" onclick="salvaGiroRapido()" style="margin-top:4px;">⚡ Salva giro completo</button>
+      </div>
     </div>
     <!-- Storico analisi -->
     <div class="card" style="margin-top:14px;">
@@ -2513,6 +2559,7 @@ function toggleRegChip(sect, btn) {
 }
 
 function renderRegistroImpianto() {
+  renderStatoSettimanale();
   renderAnalisiStorico();
   renderContaoreStorico();
   renderGasStorico();
@@ -2539,6 +2586,7 @@ function populateContaoreMacchine() {
 
 // ── ANALISI: Toggle campi ─────────────────────────────────────────
 function toggleAnalisiFields() {
+  toggleAnalisiModoWrap();
   const tipo = document.getElementById('analisiTipo').value;
   document.getElementById('analisiBiogasFields').style.display = tipo === 'biogas' ? 'block' : 'none';
   document.getElementById('analisiPercolatoFields').style.display = tipo === 'percolato' ? 'block' : 'none';
@@ -2652,6 +2700,213 @@ function clearAnalisiForm() {
   });
   document.getElementById('analisiNote').value = '';
   document.getElementById('mercPercResult').textContent = '';
+}
+
+// ── ANALISI: Stato settimanale ────────────────────────────────────
+const PUNTI_BIOGAS = ['Garage 1','Garage 2','Garage 3','Garage 4','Garage 5',
+  'Garage 6','Garage 7','Garage 8','Garage 9','Garage 10','Cisterna A','Cisterna B'];
+
+function renderStatoSettimanale() {
+  const c = document.getElementById('statoSettimanaleGrid');
+  if (!c) return;
+  const oggi = new Date();
+  const lunedi = new Date(oggi);
+  lunedi.setDate(oggi.getDate() - ((oggi.getDay() + 6) % 7));
+  lunedi.setHours(0, 0, 0, 0);
+  const luneStr = lunedi.toISOString().split('T')[0];
+
+  // Ultima data per ogni punto (anche fuori settimana)
+  const ultimaData = {};
+  PUNTI_BIOGAS.forEach(p => {
+    const last = analisiData.filter(a => a.tipo === 'biogas' && a.cisterna === p)
+      .sort((a, b) => b.data.localeCompare(a.data))[0];
+    ultimaData[p] = last ? last.data : null;
+  });
+
+  c.innerHTML = PUNTI_BIOGAS.map(p => {
+    const misurato = ultimaData[p] && ultimaData[p] >= luneStr;
+    const dataStr = ultimaData[p]
+      ? new Date(ultimaData[p] + 'T12:00:00').toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit'})
+      : '—';
+    return `<div style="display:flex;align-items:center;gap:5px;padding:5px 6px;
+      background:${misurato ? 'rgba(76,175,80,0.1)' : 'var(--surface2)'};
+      border:1px solid ${misurato ? '#4caf5040' : 'var(--border)'};
+      border-radius:8px;">
+      <div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;
+        background:${misurato ? '#4caf50' : '#555'};"></div>
+      <div>
+        <div style="font-size:10px;font-weight:600;line-height:1.2;">${p}</div>
+        <div style="font-size:9px;color:var(--text-muted);">${dataStr}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── ANALISI: Modalità (singola / giro rapido) ─────────────────────
+let analisiMode = 'singola';
+
+function setAnalisiMode(mode) {
+  analisiMode = mode;
+  const isSingola = mode === 'singola';
+  document.getElementById('analisiSingolaBottom').style.display = isSingola ? 'block' : 'none';
+  document.getElementById('analisiGiroWrap').style.display = isSingola ? 'none' : 'block';
+  document.getElementById('btnModeSingola').style.background = isSingola ? 'var(--accent)' : 'var(--surface2)';
+  document.getElementById('btnModeSingola').style.color = isSingola ? '#fff' : 'var(--text)';
+  document.getElementById('btnModeSingola').style.border = isSingola ? 'none' : '1px solid var(--border)';
+  document.getElementById('btnModeGiro').style.background = !isSingola ? 'var(--accent)' : 'var(--surface2)';
+  document.getElementById('btnModeGiro').style.color = !isSingola ? '#fff' : 'var(--text)';
+  document.getElementById('btnModeGiro').style.border = !isSingola ? 'none' : '1px solid var(--border)';
+  if (!isSingola) {
+    renderGiroRapidoGrid();
+    // Imposta data di oggi
+    if (!document.getElementById('giroData').value) {
+      document.getElementById('giroData').value = new Date().toISOString().split('T')[0];
+    }
+    // Controlla bozza salvata
+    const bozza = caricaBozzaGiro();
+    document.getElementById('giroBozzaBanner').style.display = bozza ? 'block' : 'none';
+  }
+}
+
+function toggleAnalisiModoWrap() {
+  const tipo = document.getElementById('analisiTipo').value;
+  const modoWrap = document.getElementById('analisiModoWrap');
+  if (tipo === 'biogas') {
+    modoWrap.style.display = 'block';
+  } else {
+    modoWrap.style.display = 'none';
+    if (analisiMode === 'giro') setAnalisiMode('singola');
+  }
+}
+
+// ── GIRO RAPIDO: Griglia ──────────────────────────────────────────
+function renderGiroRapidoGrid() {
+  const c = document.getElementById('giroRapidoRows');
+  if (!c) return;
+
+  // Ultimi valori per punto (come riferimento)
+  const ultimiVal = {};
+  PUNTI_BIOGAS.forEach(p => {
+    const last = analisiData.filter(a => a.tipo === 'biogas' && a.cisterna === p)
+      .sort((a, b) => b.data.localeCompare(a.data))[0];
+    ultimiVal[p] = last ? last.valori : null;
+  });
+
+  c.innerHTML = PUNTI_BIOGAS.map(p => {
+    const uv = ultimiVal[p] || {};
+    const campi = ['ch4','co2','h2s','portata','biogas_prodotto','o2'];
+    return `<div data-riga="${p}" style="display:grid;grid-template-columns:90px 62px 62px 62px 62px 62px 62px;
+      gap:4px;margin-bottom:5px;align-items:center;padding:4px;
+      border-radius:6px;border:1px solid var(--border);background:var(--surface2);">
+      <div style="font-size:10px;font-weight:700;color:var(--accent);padding-left:4px;">${p}</div>
+      ${campi.map(k => {
+        const ph = uv[k] != null ? `${uv[k]}` : '';
+        return `<input type="number" inputmode="decimal" step="0.1"
+          data-punto="${p}" data-campo="${k}"
+          placeholder="${ph}"
+          title="Ultima: ${ph || '—'}"
+          style="padding:8px 4px;font-size:16px;border:1px solid var(--border);
+            border-radius:6px;background:var(--surface);color:var(--text);
+            text-align:center;width:100%;box-sizing:border-box;">`;
+      }).join('')}
+    </div>`;
+  }).join('');
+}
+
+// ── GIRO RAPIDO: Bozza locale ─────────────────────────────────────
+const BOZZA_KEY = 'pesolog_bozza_giro';
+
+function salvaBozzaGiro() {
+  const data = document.getElementById('giroData')?.value;
+  const righe = {};
+  document.querySelectorAll('#giroRapidoRows input').forEach(el => {
+    const p = el.dataset.punto, k = el.dataset.campo;
+    if (!righe[p]) righe[p] = {};
+    righe[p][k] = el.value;
+  });
+  localStorage.setItem(BOZZA_KEY, JSON.stringify({ data, righe, ts: Date.now() }));
+}
+
+function caricaBozzaGiro() {
+  const raw = localStorage.getItem(BOZZA_KEY);
+  if (!raw) return null;
+  const b = JSON.parse(raw);
+  if (Date.now() - b.ts > 86400000) { localStorage.removeItem(BOZZA_KEY); return null; }
+  return b;
+}
+
+function cancellaBozzaGiro() {
+  localStorage.removeItem(BOZZA_KEY);
+  document.getElementById('giroBozzaBanner').style.display = 'none';
+}
+
+function caricaBozzaGiro_apply() {
+  const b = caricaBozzaGiro();
+  if (!b) return;
+  if (b.data) document.getElementById('giroData').value = b.data;
+  Object.entries(b.righe || {}).forEach(([punto, campi]) => {
+    Object.entries(campi).forEach(([campo, val]) => {
+      const el = document.querySelector(`[data-punto="${punto}"][data-campo="${campo}"]`);
+      if (el) el.value = val;
+    });
+  });
+  document.getElementById('giroBozzaBanner').style.display = 'none';
+  showToast('✓ Bozza recuperata');
+}
+
+// ── GIRO RAPIDO: Salvataggio ──────────────────────────────────────
+async function salvaGiroRapido() {
+  const data = document.getElementById('giroData').value;
+  if (!data) { showToast('⚠ Seleziona una data', '#ff6b35'); return; }
+
+  // Salva bozza prima di inviare
+  salvaBozzaGiro();
+
+  const getCampo = (punto, campo) => {
+    const el = document.querySelector(`[data-punto="${punto}"][data-campo="${campo}"]`);
+    const v = el?.value;
+    return (v !== '' && v != null) ? parseFloat(v) : null;
+  };
+
+  const records = [];
+  PUNTI_BIOGAS.forEach(punto => {
+    const valori = {
+      ch4: getCampo(punto, 'ch4'),
+      co2: getCampo(punto, 'co2'),
+      h2s: getCampo(punto, 'h2s'),
+      portata: getCampo(punto, 'portata'),
+      biogas_prodotto: getCampo(punto, 'biogas_prodotto'),
+      o2: getCampo(punto, 'o2'),
+      n2: null
+    };
+    // Salta righe completamente vuote
+    if (Object.values(valori).every(v => v === null)) return;
+    records.push({ tipo: 'biogas', data, cisterna: punto, valori, note: '' });
+  });
+
+  if (!records.length) { showToast('⚠ Nessun valore inserito', '#ff6b35'); return; }
+
+  try {
+    const user = (await sb.auth.getUser()).data.user;
+    const toInsert = records.map(r => ({ ...r, user_id: user.id }));
+    showSaving();
+    const { error } = await sb.from('analisi').insert(toInsert);
+    if (error) throw error;
+
+    // Ricarica dati freschi
+    const { data: fresh } = await sb.from('analisi').select('*').order('data', { ascending: false });
+    analisiData = fresh || [];
+
+    cancellaBozzaGiro();
+    showToast(`✓ ${records.length} analisi salvate`);
+    renderGiroRapidoGrid(); // Svuota il form
+    renderStatoSettimanale();
+    renderAnalisiStorico();
+    document.getElementById('giroData').value = '';
+  } catch(e) {
+    showToast('⚠ Errore: ' + e.message, '#ff6b35');
+    // Bozza già salvata — dati al sicuro
+  }
 }
 
 // ── ANALISI: Storico ──────────────────────────────────────────────
