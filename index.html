@@ -869,7 +869,7 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
           <div><label>H₂S (ppm)</label><input type="number" inputmode="decimal" step="1" id="anBiogas_h2s" style="margin-bottom:0;"></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
-          <div><label>N₂ (%)</label><input type="number" inputmode="decimal" step="0.1" id="anBiogas_n2" style="margin-bottom:0;"></div>
+          <div><label>H₂ (%)</label><input type="number" inputmode="decimal" step="0.1" id="anBiogas_h2" style="margin-bottom:0;"></div>
           <div><label>O₂ (%)</label><input type="number" inputmode="decimal" step="0.1" id="anBiogas_o2" style="margin-bottom:0;"></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
@@ -922,10 +922,10 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
         </div>
         <!-- Griglia scrollabile orizzontalmente -->
         <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:4px;">
-          <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px;white-space:nowrap;min-width:540px;display:grid;grid-template-columns:90px 62px 62px 62px 62px 62px 62px;gap:4px;">
-            <div>Punto</div><div>CH₄%</div><div>CO₂%</div><div>H₂S ppm</div><div>Port.</div><div>Prod.</div><div>O₂%</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px;white-space:nowrap;min-width:610px;display:grid;grid-template-columns:90px 58px 58px 58px 58px 58px 58px 58px;gap:4px;">
+            <div>Punto</div><div>CH₄%</div><div>CO₂%</div><div>H₂S ppm</div><div>H₂%</div><div>Port.</div><div>Prod.</div><div>O₂%</div>
           </div>
-          <div id="giroRapidoRows" style="min-width:540px;"></div>
+          <div id="giroRapidoRows" style="min-width:610px;"></div>
         </div>
         <div style="font-size:10px;color:var(--text-muted);margin-bottom:10px;">
           📱 Scorri a destra per vedere tutti i campi · Lascia vuoti i punti non misurati
@@ -2550,7 +2550,7 @@ function renderAndamentoGrafici() {
       { k:'ch4',     lbl:'CH₄ %' },
       { k:'co2',     lbl:'CO₂ %' },
       { k:'h2s',     lbl:'H₂S ppm' },
-      { k:'n2',      lbl:'N₂ %' },
+      { k:'h2',      lbl:'H₂ %' },
       { k:'o2',      lbl:'O₂ %' },
       { k:'portata', lbl:'Portata Nm³/h' }
     ];
@@ -2861,7 +2861,7 @@ async function salvaAnalisi() {
       ch4: parseFloat(document.getElementById('anBiogas_ch4').value) || null,
       co2: parseFloat(document.getElementById('anBiogas_co2').value) || null,
       h2s: parseFloat(document.getElementById('anBiogas_h2s').value) || null,
-      n2: parseFloat(document.getElementById('anBiogas_n2').value) || null,
+      h2: parseFloat(document.getElementById('anBiogas_h2').value) || null,
       o2: parseFloat(document.getElementById('anBiogas_o2').value) || null,
       portata: parseFloat(document.getElementById('anBiogas_portata').value) || null,
       biogas_prodotto: parseFloat(document.getElementById('anBiogas_prodotto').value) || null
@@ -2917,7 +2917,7 @@ async function salvaAnalisi() {
 }
 
 function clearAnalisiForm() {
-  ['anBiogas_ch4','anBiogas_co2','anBiogas_h2s','anBiogas_n2','anBiogas_o2','anBiogas_portata','anBiogas_prodotto',
+  ['anBiogas_ch4','anBiogas_co2','anBiogas_h2s','anBiogas_h2','anBiogas_o2','anBiogas_portata','anBiogas_prodotto',
    'anPerc_ph','anPerc_cond','anPerc_temp','anPerc_tac','anPerc_tampone','anPerc_azoto',
    'anMerc_digeribile','anMerc_nondigeribile','anMerc_legno'].forEach(id => {
     const el = document.getElementById(id);
@@ -3019,8 +3019,8 @@ function renderGiroRapidoGrid() {
 
   c.innerHTML = PUNTI_BIOGAS.map(p => {
     const uv = ultimiVal[p] || {};
-    const campi = ['ch4','co2','h2s','portata','biogas_prodotto','o2'];
-    return `<div data-riga="${p}" style="display:grid;grid-template-columns:90px 62px 62px 62px 62px 62px 62px;
+    const campi = ['ch4','co2','h2s','h2','portata','biogas_prodotto','o2'];
+    return `<div data-riga="${p}" style="display:grid;grid-template-columns:90px 58px 58px 58px 58px 58px 58px 58px;
       gap:4px;margin-bottom:5px;align-items:center;padding:4px;
       border-radius:6px;border:1px solid var(--border);background:var(--surface2);">
       <div style="font-size:10px;font-weight:700;color:var(--accent);padding-left:4px;">${p}</div>
@@ -3099,10 +3099,10 @@ async function salvaGiroRapido() {
       ch4: getCampo(punto, 'ch4'),
       co2: getCampo(punto, 'co2'),
       h2s: getCampo(punto, 'h2s'),
+      h2:  getCampo(punto, 'h2'),
       portata: getCampo(punto, 'portata'),
       biogas_prodotto: getCampo(punto, 'biogas_prodotto'),
-      o2: getCampo(punto, 'o2'),
-      n2: null
+      o2: getCampo(punto, 'o2')
     };
     // Salta righe completamente vuote
     if (Object.values(valori).every(v => v === null)) return;
@@ -3156,7 +3156,7 @@ function renderAnalisiStorico() {
     const v = a.valori || {};
     let dettaglio = '';
     if (a.tipo === 'biogas') {
-      let parts = ['CH₄:'+fmt(v.ch4)+'%','CO₂:'+fmt(v.co2)+'%','H₂S:'+fmt(v.h2s)+'ppm','N₂:'+fmt(v.n2)+'%','O₂:'+fmt(v.o2)+'%'];
+      let parts = ['CH₄:'+fmt(v.ch4)+'%','CO₂:'+fmt(v.co2)+'%','H₂S:'+fmt(v.h2s)+'ppm','H₂:'+fmt(v.h2)+'%','O₂:'+fmt(v.o2)+'%'];
       if (v.portata != null) parts.push('Portata:'+fmt(v.portata)+' Nm³/h');
       if (v.biogas_prodotto != null) parts.push('Prod:'+fmt(v.biogas_prodotto)+' Nm³/h');
       dettaglio = parts.filter(s=>!s.includes('null')).join(' · ');
