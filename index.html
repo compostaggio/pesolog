@@ -224,6 +224,25 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
   input, select, textarea { font-size: 16px !important; }
 }
 
+/* ── DESKTOP ANDAMENTO ── */
+@media (min-width: 768px) {
+  #page-andamento {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+  .and-chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .and-chart-full {
+    grid-column: 1 / -1;
+  }
+  .and-canvas {
+    height: 260px !important;
+  }
+}
+
 @media print{
   body{background:#fff!important;color:#000!important;padding:0!important;}
   .nav,.hdr,.overlay,.page{display:none!important;}
@@ -1004,44 +1023,50 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
     <div id="andamentoUltimeAnalisi"></div>
   </div>
 
-  <!-- Grafici trend -->
-  <div class="card" style="margin-top:14px;">
-    <div class="card-title">📈 Trend analisi</div>
-    <div style="margin-bottom:10px;">
-      <label>Tipo</label>
-      <select id="andTrendTipo" onchange="renderAndamentoGrafici()" style="margin-bottom:0;">
-        <option value="biogas">Biogas</option>
-        <option value="percolato">Percolato</option>
-        <option value="merceologica">Merceologica</option>
-      </select>
-    </div>
-    <div style="margin-bottom:8px;">
-      <label>Periodo</label>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        <input type="date" id="andTrendDa" onchange="renderAndamentoGrafici()" style="margin-bottom:0;">
-        <input type="date" id="andTrendA" onchange="renderAndamentoGrafici()" style="margin-bottom:0;">
-      </div>
-    </div>
-    <canvas id="andTrendChart" height="220"></canvas>
-  </div>
+  <!-- Griglia grafici: 1 colonna mobile, 2 colonne desktop -->
+  <div class="and-chart-grid" style="margin-top:14px;">
 
-  <!-- Trend produzione biometano in rete -->
-  <div class="card" style="margin-top:14px;">
-    <div class="card-title">⛽ Trend biometano in rete</div>
-    <canvas id="andGasChart" height="200"></canvas>
-  </div>
-
-  <!-- Produzione biometano reale per punto (CH₄% × portata) -->
-  <div class="card" style="margin-top:14px;">
-    <div class="card-title">🔋 Produzione biometano per punto (CH₄% × portata)</div>
-    <div style="margin-bottom:8px;">
-      <label>Periodo</label>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        <input type="date" id="andBiomDa" onchange="renderBiometanoPerPunto()" style="margin-bottom:0;">
-        <input type="date" id="andBiomA" onchange="renderBiometanoPerPunto()" style="margin-bottom:0;">
+    <!-- Trend analisi -->
+    <div class="card">
+      <div class="card-title">📈 Trend analisi</div>
+      <div style="margin-bottom:10px;">
+        <label>Tipo</label>
+        <select id="andTrendTipo" onchange="renderAndamentoGrafici()" style="margin-bottom:0;">
+          <option value="biogas">Biogas</option>
+          <option value="percolato">Percolato</option>
+          <option value="merceologica">Merceologica</option>
+        </select>
       </div>
+      <div style="margin-bottom:8px;">
+        <label>Periodo</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <input type="date" id="andTrendDa" onchange="renderAndamentoGrafici()" style="margin-bottom:0;">
+          <input type="date" id="andTrendA" onchange="renderAndamentoGrafici()" style="margin-bottom:0;">
+        </div>
+      </div>
+      <canvas id="andTrendChart" class="and-canvas" style="height:220px;"></canvas>
     </div>
-    <canvas id="andBiometanoChart" height="250"></canvas>
+
+    <!-- Trend biometano in rete -->
+    <div class="card">
+      <div class="card-title">⛽ Trend biometano in rete</div>
+      <div style="height:88px;"></div><!-- spacer allineamento con filtri a sinistra -->
+      <canvas id="andGasChart" class="and-canvas" style="height:220px;"></canvas>
+    </div>
+
+    <!-- Produzione biometano per punto — occupa tutta la larghezza -->
+    <div class="card and-chart-full">
+      <div class="card-title">🔋 Produzione biometano reale per punto (CH₄% × portata Nm³/h)</div>
+      <div style="margin-bottom:8px;">
+        <label>Periodo</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:400px;">
+          <input type="date" id="andBiomDa" onchange="renderBiometanoPerPunto()" style="margin-bottom:0;">
+          <input type="date" id="andBiomA" onchange="renderBiometanoPerPunto()" style="margin-bottom:0;">
+        </div>
+      </div>
+      <canvas id="andBiometanoChart" class="and-canvas" style="height:260px;"></canvas>
+    </div>
+
   </div>
 </div>
 
@@ -2493,7 +2518,12 @@ function renderAndamentoGrafici() {
   andTrendChartInstance = new Chart(ctx, {
     type: 'line',
     data: { labels, datasets },
-    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } }, scales: { x: { ticks: { font: { size: 9 } } }, y: { ticks: { font: { size: 10 } } } } }
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10, padding: 8 } }, tooltip: { mode: 'index', intersect: false } },
+      scales: { x: { ticks: { font: { size: 9 }, maxRotation: 45, maxTicksLimit: 12 } }, y: { ticks: { font: { size: 10 } }, beginAtZero: false } }
+    }
   });
 }
 
@@ -2524,7 +2554,12 @@ function renderAndamentoGas() {
   andGasChartInstance = new Chart(ctx, {
     type: 'line',
     data: { labels, datasets },
-    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } }, scales: { x: { ticks: { font: { size: 9 } } }, y: { ticks: { font: { size: 10 } } } } }
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10, padding: 8 } }, tooltip: { mode: 'index', intersect: false } },
+      scales: { x: { ticks: { font: { size: 9 }, maxRotation: 45, maxTicksLimit: 12 } }, y: { ticks: { font: { size: 10 } }, beginAtZero: false } }
+    }
   });
 }
 
@@ -2580,13 +2615,14 @@ function renderBiometanoPerPunto() {
     data: { labels, datasets },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
-        legend: { position: 'bottom', labels: { font: { size: 9 }, boxWidth: 12 } },
-        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + (ctx.parsed.y != null ? ctx.parsed.y.toFixed(1) + ' Nm³/h' : '—') } }
+        legend: { position: 'bottom', labels: { font: { size: 9 }, boxWidth: 10, padding: 8 } },
+        tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ctx.dataset.label + ': ' + (ctx.parsed.y != null ? ctx.parsed.y.toFixed(1) + ' Nm³/h' : '—') } }
       },
       scales: {
-        x: { ticks: { font: { size: 9 }, maxRotation: 45 } },
-        y: { title: { display: true, text: 'Nm³/h biometano', font: { size: 10 } }, ticks: { font: { size: 10 } } }
+        x: { ticks: { font: { size: 9 }, maxRotation: 45, maxTicksLimit: 12 } },
+        y: { title: { display: true, text: 'Nm³/h biometano', font: { size: 10 } }, ticks: { font: { size: 10 } }, beginAtZero: false }
       }
     }
   });
