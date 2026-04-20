@@ -1031,10 +1031,25 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
       <div class="card-title">📈 Trend analisi</div>
       <div style="margin-bottom:10px;">
         <label>Tipo</label>
-        <select id="andTrendTipo" onchange="renderAndamentoGrafici()" style="margin-bottom:0;">
+        <select id="andTrendTipo" onchange="onAndTrendTipoChange()" style="margin-bottom:0;">
           <option value="biogas">Biogas</option>
           <option value="percolato">Percolato</option>
           <option value="merceologica">Merceologica</option>
+        </select>
+      </div>
+      <!-- Dropdown punto — visibile solo per Biogas -->
+      <div id="andTrendPuntoWrap" style="margin-bottom:10px;">
+        <label>Punto</label>
+        <select id="andTrendPunto" onchange="renderAndamentoGrafici()" style="margin-bottom:0;">
+          <optgroup label="Garage">
+            <option>Garage 1</option><option>Garage 2</option><option>Garage 3</option>
+            <option>Garage 4</option><option>Garage 5</option><option>Garage 6</option>
+            <option>Garage 7</option><option>Garage 8</option><option>Garage 9</option>
+            <option>Garage 10</option>
+          </optgroup>
+          <optgroup label="Cisterne">
+            <option>Cisterna A</option><option>Cisterna B</option>
+          </optgroup>
         </select>
       </div>
       <div style="margin-bottom:8px;">
@@ -1050,7 +1065,17 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
     <!-- Trend biometano in rete -->
     <div class="card">
       <div class="card-title">⛽ Trend biometano in rete</div>
-      <div style="height:88px;"></div><!-- spacer allineamento con filtri a sinistra -->
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.5;">
+        Media giornaliera calcolata automaticamente tra le letture.<br>
+        Il valore è sempre in Nm³/giorno, indipendentemente dalla frequenza di inserimento.
+      </div>
+      <div style="margin-bottom:8px;">
+        <label>Periodo</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <input type="date" id="andGasDa" onchange="renderAndamentoGas()" style="margin-bottom:0;">
+          <input type="date" id="andGasA" onchange="renderAndamentoGas()" style="margin-bottom:0;">
+        </div>
+      </div>
       <canvas id="andGasChart" class="and-canvas" style="height:220px;"></canvas>
     </div>
 
@@ -2323,16 +2348,27 @@ async function salvaSoglie() {
 function renderAndamento() {
   renderAndamentoAlerts();
   renderUltimeAnalisi();
+
+  // Imposta date default a 3 mesi fa → oggi (solo se ancora vuote)
+  const now = new Date();
+  const m3 = new Date(); m3.setMonth(m3.getMonth() - 3);
+  const m3Str  = m3.toISOString().split('T')[0];
+  const nowStr = now.toISOString().split('T')[0];
+  const setIfEmpty = (id, val) => {
+    const el = document.getElementById(id);
+    if (el && !el.value) el.value = val;
+  };
+  setIfEmpty('andTrendDa', m3Str); setIfEmpty('andTrendA', nowStr);
+  setIfEmpty('andGasDa',   m3Str); setIfEmpty('andGasA',   nowStr);
+  setIfEmpty('andBiomDa',  m3Str); setIfEmpty('andBiomA',  nowStr);
+
+  // Mostra dropdown punto solo per biogas (default)
+  const puntoWrap = document.getElementById('andTrendPuntoWrap');
+  if (puntoWrap) puntoWrap.style.display = 'block';
+
   renderAndamentoGrafici();
   renderAndamentoGas();
   renderBiometanoPerPunto();
-  // Imposta date trend
-  const now = new Date();
-  const m3 = new Date(); m3.setMonth(m3.getMonth() - 3);
-  if (document.getElementById('andTrendDa')) document.getElementById('andTrendDa').value = m3.toISOString().split('T')[0];
-  if (document.getElementById('andTrendA')) document.getElementById('andTrendA').value = now.toISOString().split('T')[0];
-  if (document.getElementById('andBiomDa')) document.getElementById('andBiomDa').value = m3.toISOString().split('T')[0];
-  if (document.getElementById('andBiomA')) document.getElementById('andBiomA').value = now.toISOString().split('T')[0];
 }
 
 function renderAndamentoAlerts() {
@@ -2475,16 +2511,28 @@ function renderUltimeAnalisi() {
   c.innerHTML = html;
 }
 
+function onAndTrendTipoChange() {
+  const tipo = document.getElementById('andTrendTipo')?.value || 'biogas';
+  const puntoWrap = document.getElementById('andTrendPuntoWrap');
+  if (puntoWrap) puntoWrap.style.display = tipo === 'biogas' ? 'block' : 'none';
+  renderAndamentoGrafici();
+}
+
 let andTrendChartInstance = null;
 function renderAndamentoGrafici() {
   if (typeof Chart === 'undefined') return;
   const tipo = document.getElementById('andTrendTipo')?.value || 'biogas';
-  const da = document.getElementById('andTrendDa')?.value || '';
-  const a = document.getElementById('andTrendA')?.value || '';
+  const da   = document.getElementById('andTrendDa')?.value || '';
+  const a    = document.getElementById('andTrendA')?.value || '';
+  const punto = document.getElementById('andTrendPunto')?.value || '';
 
   let items = analisiData.filter(r => r.tipo === tipo).sort((x, y) => new Date(x.data) - new Date(y.data));
+
+  // Per biogas filtra per punto specifico
+  if (tipo === 'biogas' && punto) items = items.filter(r => r.cisterna === punto);
+
   if (da) items = items.filter(r => r.data >= da);
-  if (a) items = items.filter(r => r.data <= a);
+  if (a)  items = items.filter(r => r.data <= a);
 
   const ctx = document.getElementById('andTrendChart');
   if (!ctx) return;
@@ -2497,32 +2545,54 @@ function renderAndamentoGrafici() {
   const colors = ['#2e7d32','#e65100','#00838f','#6a1b9a','#c62828','#1565c0'];
 
   if (tipo === 'biogas') {
-    ['ch4','co2','h2s','n2','o2'].forEach((k, i) => {
+    // Mostra tutti i parametri per il punto selezionato
+    const campi = [
+      { k:'ch4',     lbl:'CH₄ %' },
+      { k:'co2',     lbl:'CO₂ %' },
+      { k:'h2s',     lbl:'H₂S ppm' },
+      { k:'n2',      lbl:'N₂ %' },
+      { k:'o2',      lbl:'O₂ %' },
+      { k:'portata', lbl:'Portata Nm³/h' }
+    ];
+    campi.forEach(({ k, lbl }, i) => {
       const data = items.map(r => r.valori?.[k] ?? null);
-      if (data.some(v => v != null)) datasets.push({ label: k.toUpperCase(), data, borderColor: colors[i], backgroundColor: 'transparent', tension: 0.3, pointRadius: 3 });
+      if (data.some(v => v != null)) datasets.push({
+        label: lbl, data, borderColor: colors[i % colors.length],
+        backgroundColor: 'transparent', tension: 0.3, pointRadius: 3, spanGaps: true
+      });
     });
   } else if (tipo === 'percolato') {
-    ['ph','conducibilita','temperatura'].forEach((k, i) => {
-      const lbl = {ph:'pH',conducibilita:'Conducib.',temperatura:'Temp.'}[k];
+    [{ k:'ph', lbl:'pH' }, { k:'conducibilita', lbl:'Conducib. mS/cm' }, { k:'temperatura', lbl:'Temp. °C' }].forEach(({ k, lbl }, i) => {
       const data = items.map(r => r.valori?.[k] ?? null);
-      if (data.some(v => v != null)) datasets.push({ label: lbl, data, borderColor: colors[i], backgroundColor: 'transparent', tension: 0.3, pointRadius: 3 });
+      if (data.some(v => v != null)) datasets.push({
+        label: lbl, data, borderColor: colors[i], backgroundColor: 'transparent', tension: 0.3, pointRadius: 3
+      });
     });
   } else if (tipo === 'merceologica') {
-    ['digeribile_perc','nondigeribile_perc','legno_perc'].forEach((k, i) => {
-      const lbl = {digeribile_perc:'Digeribile %',nondigeribile_perc:'Non dig. %',legno_perc:'Legno %'}[k];
+    [{ k:'digeribile_perc', lbl:'Digeribile %' }, { k:'nondigeribile_perc', lbl:'Non dig. %' }, { k:'legno_perc', lbl:'Legno %' }].forEach(({ k, lbl }, i) => {
       const data = items.map(r => r.valori?.[k] ?? null);
-      if (data.some(v => v != null)) datasets.push({ label: lbl, data, borderColor: colors[i], backgroundColor: 'transparent', tension: 0.3, pointRadius: 3 });
+      if (data.some(v => v != null)) datasets.push({
+        label: lbl, data, borderColor: colors[i], backgroundColor: 'transparent', tension: 0.3, pointRadius: 3
+      });
     });
   }
 
+  const titoloPunto = (tipo === 'biogas' && punto) ? ` — ${punto}` : '';
   andTrendChartInstance = new Chart(ctx, {
     type: 'line',
     data: { labels, datasets },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10, padding: 8 } }, tooltip: { mode: 'index', intersect: false } },
-      scales: { x: { ticks: { font: { size: 9 }, maxRotation: 45, maxTicksLimit: 12 } }, y: { ticks: { font: { size: 10 } }, beginAtZero: false } }
+      plugins: {
+        title: { display: !!titoloPunto, text: titoloPunto, font: { size: 11 }, color: 'var(--accent)', padding: { bottom: 6 } },
+        legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10, padding: 8 } },
+        tooltip: { mode: 'index', intersect: false }
+      },
+      scales: {
+        x: { ticks: { font: { size: 9 }, maxRotation: 45, maxTicksLimit: 12 } },
+        y: { ticks: { font: { size: 10 } }, beginAtZero: false }
+      }
     }
   });
 }
@@ -2534,20 +2604,73 @@ function renderAndamentoGas() {
   if (!ctx) return;
   if (andGasChartInstance) andGasChartInstance.destroy();
 
-  const sorted = [...produzioneGasData].sort((a, b) => new Date(a.data) - new Date(b.data));
+  const da = document.getElementById('andGasDa')?.value || '';
+  const a  = document.getElementById('andGasA')?.value || '';
+
+  let sorted = [...produzioneGasData]
+    .filter(r => r.gas_rete != null)
+    .sort((a, b) => new Date(a.data) - new Date(b.data));
+
+  // Filtra per periodo — ma includi sempre il punto precedente al da
+  // per poter calcolare la differenza al confine del periodo
+  if (da || a) {
+    const filtrato = sorted.filter(r => (!da || r.data >= da) && (!a || r.data <= a));
+    // Aggiungi il punto immediatamente precedente al da (se esiste) per calcolare il primo giorno
+    if (da) {
+      const precedente = sorted.filter(r => r.data < da).pop();
+      if (precedente) sorted = [precedente, ...filtrato];
+      else sorted = filtrato;
+    } else {
+      sorted = filtrato;
+    }
+  }
+
   if (sorted.length < 2) { andGasChartInstance = null; return; }
 
+  // ── Logica giornaliera ──────────────────────────────────────────────
+  // Per ogni coppia di letture consecutive calcola la media giornaliera
+  // e genera un punto per ogni giorno del periodo, anche se le letture
+  // sono distanziate di 15 giorni. Il valore è sempre Nm³/giorno.
   const labels = [];
-  const prodNetta = [];
+  const values = [];
 
   for (let i = 1; i < sorted.length; i++) {
-    const curr = sorted[i], prev = sorted[i - 1];
-    labels.push(fmtData(curr.data));
-    prodNetta.push(curr.gas_rete && prev.gas_rete ? +(curr.gas_rete - prev.gas_rete).toFixed(1) : null);
+    const prev = sorted[i - 1];
+    const curr = sorted[i];
+    if (!prev.gas_rete || !curr.gas_rete) continue;
+
+    const prevDate = new Date(prev.data + 'T00:00:00');
+    const currDate = new Date(curr.data + 'T00:00:00');
+    const daysDiff = Math.round((currDate - prevDate) / 86400000);
+    if (daysDiff <= 0) continue;
+
+    const dailyRate = (curr.gas_rete - prev.gas_rete) / daysDiff;
+    if (dailyRate < 0) continue; // lettura errata o contatore azzerato
+
+    // Genera un punto per ogni giorno dal giorno successivo alla lettura precedente
+    // fino alla lettura corrente (inclusa)
+    for (let d = 1; d <= daysDiff; d++) {
+      const giorno = new Date(prevDate);
+      giorno.setDate(giorno.getDate() + d);
+      const giornoStr = giorno.toISOString().split('T')[0];
+      // Rispetta il filtro periodo anche sui giorni generati
+      if (da && giornoStr < da) continue;
+      if (a  && giornoStr > a)  break;
+      labels.push(fmtData(giornoStr));
+      values.push(+dailyRate.toFixed(1));
+    }
   }
 
   const datasets = [];
-  if (prodNetta.some(v => v != null)) datasets.push({ label: 'Biometano netto in rete (Nm³)', data: prodNetta, borderColor: '#2e7d32', backgroundColor: 'rgba(46,125,50,0.1)', fill: true, tension: 0.3 });
+  if (values.some(v => v != null)) datasets.push({
+    label: 'Biometano in rete (Nm³/giorno)',
+    data: values,
+    borderColor: '#2e7d32',
+    backgroundColor: 'rgba(46,125,50,0.08)',
+    fill: true,
+    tension: 0.2,
+    pointRadius: values.length > 60 ? 0 : 2  // nascondi i punti se ci sono molti giorni
+  });
 
   if (!datasets.length) return;
 
@@ -2557,8 +2680,20 @@ function renderAndamentoGas() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10, padding: 8 } }, tooltip: { mode: 'index', intersect: false } },
-      scales: { x: { ticks: { font: { size: 9 }, maxRotation: 45, maxTicksLimit: 12 } }, y: { ticks: { font: { size: 10 } }, beginAtZero: false } }
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10, padding: 8 } },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          callbacks: {
+            label: ctx => `${ctx.parsed.y != null ? ctx.parsed.y.toFixed(1) + ' Nm³/giorno' : '—'}`
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { font: { size: 9 }, maxRotation: 45, maxTicksLimit: labels.length > 90 ? 8 : 12 } },
+        y: { ticks: { font: { size: 10 } }, beginAtZero: true, title: { display: true, text: 'Nm³/giorno', font: { size: 10 } } }
+      }
     }
   });
 }
