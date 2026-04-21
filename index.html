@@ -825,7 +825,7 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
     </div>
 
     <div class="card">
-      <div class="card-title">Nuova analisi</div>
+      <div class="card-title" id="analisiFormTitle">Nuova analisi</div>
       <div style="margin-bottom:10px;">
         <label>Tipo analisi</label>
         <select id="analisiTipo" onchange="toggleAnalisiFields()" style="margin-bottom:0;">
@@ -918,7 +918,10 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
           <label>Note</label>
           <textarea id="analisiNote" rows="2" placeholder="Note opzionali..." style="margin-bottom:0;"></textarea>
         </div>
-        <button class="submit-btn" onclick="salvaAnalisi()" style="margin-top:12px;">Salva analisi</button>
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <button class="submit-btn" onclick="salvaAnalisi()" style="flex:1;">Salva analisi</button>
+          <button id="analisiCancelEdit" onclick="cancelEditAnalisi()" style="display:none;flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:12px;font-family:'DM Mono',monospace;font-size:13px;cursor:pointer;color:var(--text);">✕ Annulla</button>
+        </div>
       </div>
 
       <!-- ── GIRO RAPIDO ── -->
@@ -972,7 +975,7 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
   <!-- ── CONTAORE ── -->
   <div id="regSect-contaore" class="reg-section" style="display:none;">
     <div class="card">
-      <div class="card-title">Nuova lettura contaore</div>
+      <div class="card-title" id="contaoreFormTitle">Nuova lettura contaore</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
         <div><label>Macchina</label>
           <select id="contaoreMacchina" style="margin-bottom:0;"></select>
@@ -989,7 +992,10 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
         <label>Note</label>
         <input type="text" id="contaoreNote" placeholder="Note opzionali..." style="margin-bottom:0;">
       </div>
-      <button class="submit-btn" onclick="salvaContaore()" style="margin-top:12px;">Salva lettura</button>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="submit-btn" onclick="salvaContaore()" style="flex:1;">Salva lettura</button>
+        <button id="contaoreCancelEdit" onclick="cancelEditContaore()" style="display:none;flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:12px;font-family:'DM Mono',monospace;font-size:13px;cursor:pointer;color:var(--text);">✕ Annulla</button>
+      </div>
     </div>
     <div class="card" style="margin-top:14px;">
       <div class="card-title">Storico contaore</div>
@@ -1000,10 +1006,10 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
   <!-- ── PRODUZIONE GAS ── -->
   <div id="regSect-gas" class="reg-section" style="display:none;">
     <div class="card">
-      <div class="card-title">Nuova lettura biometano in rete</div>
-      <div style="margin-bottom:8px;">
-        <label>Data</label>
-        <input type="date" id="gasData" style="margin-bottom:0;">
+      <div class="card-title" id="gasFormTitle">Nuova lettura biometano in rete</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <div><label>Data</label><input type="date" id="gasData" style="margin-bottom:0;"></div>
+        <div><label>Ora lettura</label><input type="time" id="gasOra" style="margin-bottom:0;"></div>
       </div>
       <div>
         <label>Biometano in rete (Nm³) — cumulativo</label>
@@ -1013,7 +1019,10 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
         <label>Note</label>
         <input type="text" id="gasNote" placeholder="Note opzionali..." style="margin-bottom:0;">
       </div>
-      <button class="submit-btn" onclick="salvaProdGas()" style="margin-top:12px;">Salva lettura</button>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="submit-btn" onclick="salvaProdGas()" style="flex:1;">Salva lettura</button>
+        <button id="gasCancelEdit" onclick="cancelEditGas()" style="display:none;flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:12px;font-family:'DM Mono',monospace;font-size:13px;cursor:pointer;color:var(--text);">✕ Annulla</button>
+      </div>
     </div>
     <div class="card" style="margin-top:14px;">
       <div class="card-title">Storico biometano in rete</div>
@@ -1207,6 +1216,9 @@ const SOGLIE_DEFAULT = {
 let analisiData = [];
 let contaoreData = [];
 let produzioneGasData = [];
+let editingAnalisiId = null;
+let editingContaoreId = null;
+let editingGasId = null;
 
 // ══════════════════════════════════════════════════════════════════════
 // AUTH
@@ -2621,7 +2633,7 @@ function renderAndamentoGas() {
 
   let sorted = [...produzioneGasData]
     .filter(r => r.gas_rete != null)
-    .sort((a, b) => new Date(a.data) - new Date(b.data));
+    .sort((a, b) => new Date(a.data + 'T' + (a.ora||'00:00') + ':00') - new Date(b.data + 'T' + (b.ora||'00:00') + ':00'));
 
   // Filtra per periodo — ma includi sempre il punto precedente al da
   // per poter calcolare la differenza al confine del periodo
@@ -2651,13 +2663,16 @@ function renderAndamentoGas() {
     const curr = sorted[i];
     if (!prev.gas_rete || !curr.gas_rete) continue;
 
+    const prevTs = new Date(prev.data + 'T' + (prev.ora || '00:00') + ':00');
+    const currTs = new Date(curr.data + 'T' + (curr.ora || '00:00') + ':00');
     const prevDate = new Date(prev.data + 'T00:00:00');
-    const currDate = new Date(curr.data + 'T00:00:00');
-    const daysDiff = Math.round((currDate - prevDate) / 86400000);
-    if (daysDiff <= 0) continue;
+    const hoursElapsed = (currTs - prevTs) / 3600000;
+    if (hoursElapsed <= 0) continue;
+    const daysDiff = Math.round((currTs - prevTs) / 86400000) || 1;
 
-    const dailyRate = (curr.gas_rete - prev.gas_rete) / daysDiff;
-    if (dailyRate < 0) continue; // lettura errata o contatore azzerato
+    const nm3h = (curr.gas_rete - prev.gas_rete) / hoursElapsed;
+    if (nm3h < 0) continue; // lettura errata o contatore azzerato
+    const dailyRate = nm3h * 24; // Nm³/giorno normalizzato
 
     // Genera un punto per ogni giorno dal giorno successivo alla lettura precedente
     // fino alla lettura corrente (inclusa)
@@ -2675,7 +2690,7 @@ function renderAndamentoGas() {
 
   const datasets = [];
   if (values.some(v => v != null)) datasets.push({
-    label: 'Biometano in rete (Nm³/giorno)',
+    label: 'Biometano in rete (Nm³/giorno normalizzato)',
     data: values,
     borderColor: '#2e7d32',
     backgroundColor: 'rgba(46,125,50,0.08)',
@@ -2914,18 +2929,82 @@ async function salvaAnalisi() {
 
   try {
     showSaving();
-    const { error } = await sb.from('analisi').insert(record);
-    if (error) throw error;
-    analisiData.unshift({ ...record, id: crypto.randomUUID() });
-    // Ricarica per avere l'id reale
+    if (editingAnalisiId) {
+      const { error } = await sb.from('analisi').update(record).eq('id', editingAnalisiId);
+      if (error) throw error;
+      showToast('✓ Analisi aggiornata');
+      editingAnalisiId = null;
+      document.getElementById('analisiFormTitle').textContent = 'Nuova analisi';
+      document.getElementById('analisiCancelEdit').style.display = 'none';
+    } else {
+      const { error } = await sb.from('analisi').insert(record);
+      if (error) throw error;
+      showToast('✓ Analisi salvata');
+    }
     const { data: fresh } = await sb.from('analisi').select('*').order('data', { ascending: false });
     analisiData = fresh || [];
-    showToast('✓ Analisi salvata');
     clearAnalisiForm();
     renderAnalisiStorico();
   } catch (e) {
     showToast('⚠ Errore: ' + e.message, '#ff6b35');
   }
+}
+
+function cancelEditAnalisi() {
+  editingAnalisiId = null;
+  document.getElementById('analisiFormTitle').textContent = 'Nuova analisi';
+  document.getElementById('analisiCancelEdit').style.display = 'none';
+  clearAnalisiForm();
+}
+
+function editAnalisi(id) {
+  const a = analisiData.find(x => x.id === id);
+  if (!a) return;
+  // Vai alla sezione analisi
+  document.querySelectorAll('.reg-section').forEach(s => s.style.display = 'none');
+  document.getElementById('regSect-analisi').style.display = 'block';
+  document.querySelectorAll('.reg-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.reg-tab').forEach(b => { if (b.dataset.sect === 'analisi') b.classList.add('active'); });
+  // Imposta tipo e modalità singola
+  document.getElementById('analisiTipo').value = a.tipo;
+  setAnalisiMode('singola');
+  toggleAnalisiFields();
+  // Data e punto
+  document.getElementById('analisiData').value = a.data;
+  if ((a.tipo === 'biogas' || a.tipo === 'percolato') && a.cisterna) {
+    const sel = document.getElementById('analisiPunto');
+    if (sel) sel.value = a.cisterna;
+  }
+  // Valori
+  const v = a.valori || {};
+  if (a.tipo === 'biogas') {
+    ['ch4','co2','h2s','h2','o2','portata'].forEach(k => {
+      const el = document.getElementById('anBiogas_' + k);
+      if (el) el.value = v[k] ?? '';
+    });
+    const prod = document.getElementById('anBiogas_prodotto');
+    if (prod) prod.value = v.biogas_prodotto ?? '';
+  } else if (a.tipo === 'percolato') {
+    const map = {ph:'ph',cond:'conducibilita',temp:'temperatura',tac:'tac',tampone:'tampone',azoto:'azoto_ammoniacale'};
+    Object.entries(map).forEach(([fld, key]) => {
+      const el = document.getElementById('anPerc_' + fld);
+      if (el) el.value = v[key] ?? '';
+    });
+  } else if (a.tipo === 'merceologica') {
+    const md = document.getElementById('anMerc_digeribile');
+    const mn = document.getElementById('anMerc_nondigeribile');
+    const ml = document.getElementById('anMerc_legno');
+    if (md) md.value = v.digeribile_kg ?? '';
+    if (mn) mn.value = v.nondigeribile_kg ?? '';
+    if (ml) ml.value = v.legno_kg ?? '';
+    calcMercPerc();
+  }
+  document.getElementById('analisiNote').value = a.note || '';
+  // Modalità modifica
+  editingAnalisiId = id;
+  document.getElementById('analisiFormTitle').textContent = '✏️ Modifica analisi';
+  document.getElementById('analisiCancelEdit').style.display = 'block';
+  document.getElementById('regSect-analisi').scrollIntoView({ behavior: 'smooth' });
 }
 
 function clearAnalisiForm() {
@@ -3190,6 +3269,10 @@ function renderAnalisiStorico() {
       <div style="font-size:12px;color:var(--text-dim);margin-top:4px;">${dettaglio}</div>
       ${a.note?`<div class="log-note">${a.note}</div>`:''}
       <div class="log-actions">
+        <button class="log-act-btn edit" onclick="editAnalisi('${a.id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Modifica
+        </button>
         <button class="log-act-btn del" onclick="deleteAnalisi('${a.id}')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
           Elimina
@@ -3229,15 +3312,49 @@ async function salvaContaore() {
 
   try {
     showSaving();
-    const { error } = await sb.from('contaore').insert(record);
-    if (error) throw error;
+    if (editingContaoreId) {
+      const { error } = await sb.from('contaore').update(record).eq('id', editingContaoreId);
+      if (error) throw error;
+      showToast('✓ Lettura contaore aggiornata');
+      editingContaoreId = null;
+      document.getElementById('contaoreFormTitle').textContent = 'Nuova lettura contaore';
+      document.getElementById('contaoreCancelEdit').style.display = 'none';
+    } else {
+      const { error } = await sb.from('contaore').insert(record);
+      if (error) throw error;
+      showToast('✓ Lettura contaore salvata');
+    }
     const { data: fresh } = await sb.from('contaore').select('*').order('data', { ascending: false });
     contaoreData = fresh || [];
-    showToast('✓ Lettura contaore salvata');
     document.getElementById('contaoreOre').value = '';
     document.getElementById('contaoreNote').value = '';
     renderContaoreStorico();
   } catch (e) { showToast('⚠ Errore: ' + e.message, '#ff6b35'); }
+}
+
+function cancelEditContaore() {
+  editingContaoreId = null;
+  document.getElementById('contaoreFormTitle').textContent = 'Nuova lettura contaore';
+  document.getElementById('contaoreCancelEdit').style.display = 'none';
+  document.getElementById('contaoreOre').value = '';
+  document.getElementById('contaoreNote').value = '';
+}
+
+function editContaore(id) {
+  const r = contaoreData.find(x => x.id === id);
+  if (!r) return;
+  document.querySelectorAll('.reg-section').forEach(s => s.style.display = 'none');
+  document.getElementById('regSect-contaore').style.display = 'block';
+  document.querySelectorAll('.reg-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.reg-tab').forEach(b => { if (b.dataset.sect === 'contaore') b.classList.add('active'); });
+  document.getElementById('contaoreMacchina').value = r.macchina;
+  document.getElementById('contaoreData').value = r.data;
+  document.getElementById('contaoreOre').value = r.ore;
+  document.getElementById('contaoreNote').value = r.note || '';
+  editingContaoreId = id;
+  document.getElementById('contaoreFormTitle').textContent = '✏️ Modifica lettura contaore';
+  document.getElementById('contaoreCancelEdit').style.display = 'block';
+  document.getElementById('regSect-contaore').scrollIntoView({ behavior: 'smooth' });
 }
 
 function renderContaoreStorico() {
@@ -3274,6 +3391,10 @@ function renderContaoreStorico() {
           </div>
         </div>
         <div class="log-actions" style="margin-top:6px;">
+          <button class="log-act-btn edit" onclick="editContaore('${r.id}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Modifica
+          </button>
           <button class="log-act-btn del" onclick="deleteContaore('${r.id}')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
             Elimina
@@ -3302,25 +3423,62 @@ async function salvaProdGas() {
   if (!data) { showToast('⚠ Seleziona una data', '#ff6b35'); return; }
   const gasRete = parseFloat(document.getElementById('gasRete').value) || null;
   if (!gasRete) { showToast('⚠ Inserisci il valore cumulativo', '#ff6b35'); return; }
+  const ora = document.getElementById('gasOra').value || null;
 
   const user = (await sb.auth.getUser()).data.user;
   const record = {
-    user_id: user.id, data,
+    user_id: user.id, data, ora,
     gas_rete: gasRete, biogas_prodotto: null,
     note: document.getElementById('gasNote').value.trim()
   };
 
   try {
     showSaving();
-    const { error } = await sb.from('produzione_gas').insert(record);
-    if (error) throw error;
+    if (editingGasId) {
+      const { error } = await sb.from('produzione_gas').update(record).eq('id', editingGasId);
+      if (error) throw error;
+      showToast('✓ Lettura gas aggiornata');
+      editingGasId = null;
+      document.getElementById('gasFormTitle').textContent = 'Nuova lettura biometano in rete';
+      document.getElementById('gasCancelEdit').style.display = 'none';
+    } else {
+      const { error } = await sb.from('produzione_gas').insert(record);
+      if (error) throw error;
+      showToast('✓ Lettura gas salvata');
+    }
     const { data: fresh } = await sb.from('produzione_gas').select('*').order('data', { ascending: false });
     produzioneGasData = fresh || [];
-    showToast('✓ Lettura gas salvata');
     document.getElementById('gasRete').value = '';
     document.getElementById('gasNote').value = '';
+    document.getElementById('gasOra').value = '';
     renderGasStorico();
   } catch (e) { showToast('⚠ Errore: ' + e.message, '#ff6b35'); }
+}
+
+function cancelEditGas() {
+  editingGasId = null;
+  document.getElementById('gasFormTitle').textContent = 'Nuova lettura biometano in rete';
+  document.getElementById('gasCancelEdit').style.display = 'none';
+  document.getElementById('gasRete').value = '';
+  document.getElementById('gasOra').value = '';
+  document.getElementById('gasNote').value = '';
+}
+
+function editProdGas(id) {
+  const r = produzioneGasData.find(x => x.id === id);
+  if (!r) return;
+  document.querySelectorAll('.reg-section').forEach(s => s.style.display = 'none');
+  document.getElementById('regSect-gas').style.display = 'block';
+  document.querySelectorAll('.reg-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.reg-tab').forEach(b => { if (b.dataset.sect === 'gas') b.classList.add('active'); });
+  document.getElementById('gasData').value = r.data;
+  document.getElementById('gasOra').value = r.ora || '';
+  document.getElementById('gasRete').value = r.gas_rete ?? '';
+  document.getElementById('gasNote').value = r.note || '';
+  editingGasId = id;
+  document.getElementById('gasFormTitle').textContent = '✏️ Modifica lettura gas';
+  document.getElementById('gasCancelEdit').style.display = 'block';
+  document.getElementById('regSect-gas').scrollIntoView({ behavior: 'smooth' });
 }
 
 function renderGasStorico() {
@@ -3331,27 +3489,45 @@ function renderGasStorico() {
     return;
   }
 
-  const sorted = [...produzioneGasData].sort((a, b) => new Date(b.data) - new Date(a.data));
+  const sorted = [...produzioneGasData].sort((a, b) => {
+    const ta = new Date(a.data + 'T' + (a.ora || '00:00') + ':00');
+    const tb = new Date(b.data + 'T' + (b.ora || '00:00') + ':00');
+    return tb - ta;
+  });
   c.innerHTML = sorted.map((r, i) => {
     const prev = sorted[i + 1];
-    const deltaRete = (prev && r.gas_rete && prev.gas_rete) ? (r.gas_rete - prev.gas_rete).toFixed(1) : null;
+    let deltaLabel = '';
+    if (prev && r.gas_rete && prev.gas_rete) {
+      const delta = r.gas_rete - prev.gas_rete;
+      const tsR = new Date(r.data + 'T' + (r.ora || '00:00') + ':00');
+      const tsP = new Date(prev.data + 'T' + (prev.ora || '00:00') + ':00');
+      const ore = (tsR - tsP) / 3600000;
+      const nm3h = ore > 0 ? (delta / ore).toFixed(2) : null;
+      deltaLabel = `<div style="text-align:right;">
+        <div style="font-size:14px;font-weight:700;color:var(--accent);">+${delta.toLocaleString('it-IT')} Nm³</div>
+        ${nm3h ? `<div style="font-size:11px;color:var(--accent3);">${nm3h} Nm³/h</div>` : ''}
+        <div style="font-size:10px;color:var(--text-muted);">${ore > 0 ? ore.toFixed(1) + 'h' : ''} dalla prec.</div>
+      </div>`;
+    }
+    const oraLabel = r.ora ? ` alle ${r.ora}` : '';
     return `<div class="log-entry" style="padding:10px;">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div>
-          <div style="font-size:12px;font-weight:600;">${fmtData(r.data)}</div>
+          <div style="font-size:12px;font-weight:600;">${fmtData(r.data)}${oraLabel}</div>
           <div style="font-size:11px;color:var(--text-dim);">
-            ${r.gas_rete != null ? 'Biometano in rete: ' + r.gas_rete.toLocaleString('it-IT') + ' Nm³' : ''}
+            ${r.gas_rete != null ? 'Cumulativo: ' + r.gas_rete.toLocaleString('it-IT') + ' Nm³' : ''}
             ${r.note ? ' · ' + r.note : ''}
           </div>
         </div>
-        ${deltaRete ? `<div style="text-align:right;">
-          <div style="font-size:14px;font-weight:700;color:var(--accent);">+${parseFloat(deltaRete).toLocaleString('it-IT')} Nm³</div>
-          <div style="font-size:10px;color:var(--text-muted);">prod. netta biometano</div>
-        </div>` : ''}
+        ${deltaLabel}
       </div>
       <div class="log-actions" style="margin-top:6px;">
+        <button class="log-act-btn edit" onclick="editProdGas('${r.id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Modifica
+        </button>
         <button class="log-act-btn del" onclick="deleteProdGas('${r.id}')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
           Elimina
         </button>
       </div>
