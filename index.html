@@ -91,6 +91,15 @@ body{font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);min-
 .slabel{font-size:10px;letter-spacing:2px;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px;}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:14px;}
 .card-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--accent);margin-bottom:14px;}
+/* Accordion */
+.card.acc{padding:0;}
+.card.acc > .acc-head{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;background:none;border:none;padding:14px 16px;margin:0;cursor:pointer;font:inherit;color:inherit;text-align:left;border-radius:var(--r);}
+.card.acc > .acc-head:hover{background:var(--surface2);}
+.card.acc > .acc-head .card-title{margin:0 !important;flex:1;}
+.card.acc > .acc-head .acc-chev{font-size:11px;color:var(--text-muted);transition:transform .2s;flex-shrink:0;}
+.card.acc.acc-open > .acc-head .acc-chev{transform:rotate(180deg);color:var(--accent);}
+.card.acc > .acc-body{padding:0 16px 16px;}
+.card.acc:not(.acc-open) > .acc-body{display:none;}
 label{display:block;font-size:11px;color:var(--text-dim);margin-bottom:5px;}
 input,textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:11px 13px;color:var(--text);font-family:'DM Mono',monospace;font-size:16px;outline:none;transition:border-color .2s;margin-bottom:12px;-webkit-appearance:none;}
 select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:11px 13px;color:var(--text);font-family:'DM Mono',monospace;font-size:16px;outline:none;transition:border-color .2s;margin-bottom:12px;}
@@ -819,13 +828,16 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
   <div id="regSect-analisi" class="reg-section">
 
     <!-- STATO SETTIMANALE BIOGAS -->
-    <div class="card" id="statoSettimanaleCard" style="margin-bottom:14px;">
-      <div class="card-title" style="margin-bottom:8px;">📍 Stato giro questa settimana</div>
+    <div class="card acc" id="statoSettimanaleCard" style="margin-bottom:14px;">
+      <button type="button" class="acc-head"><span class="card-title" style="margin:0;">📍 Stato giro questa settimana</span><span class="acc-chev">▾</span></button>
+      <div class="acc-body">
       <div id="statoSettimanaleGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;"></div>
+      </div>
     </div>
 
-    <div class="card">
-      <div class="card-title" id="analisiFormTitle">Nuova analisi</div>
+    <div class="card acc" id="analisiFormCard">
+      <button type="button" class="acc-head"><span class="card-title" id="analisiFormTitle">Nuova analisi</span><span class="acc-chev">▾</span></button>
+      <div class="acc-body">
       <div style="margin-bottom:10px;">
         <label>Tipo analisi</label>
         <select id="analisiTipo" onchange="toggleAnalisiFields()" style="margin-bottom:0;">
@@ -947,10 +959,12 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
         </div>
         <button class="submit-btn" onclick="salvaGiroRapido()" style="margin-top:4px;">⚡ Salva giro completo</button>
       </div>
+      </div><!-- /acc-body Nuova analisi -->
     </div>
     <!-- Storico analisi -->
-    <div class="card" style="margin-top:14px;">
-      <div class="card-title">Storico analisi</div>
+    <div class="card acc" id="analisiStoricoCard" style="margin-top:14px;">
+      <button type="button" class="acc-head"><span class="card-title" style="margin:0;">Storico analisi</span><span class="acc-chev">▾</span></button>
+      <div class="acc-body">
       <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
         <select id="analisiStoricoFiltro" onchange="renderAnalisiStorico()" style="margin-bottom:0;flex:1;min-width:100px;">
           <option value="">Tutti i tipi</option>
@@ -969,13 +983,15 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
         <input type="date" id="analisiStoricoData" oninput="renderAnalisiStorico()" style="margin-bottom:0;flex:1;min-width:120px;">
       </div>
       <div id="analisiStoricoList"></div>
+      </div><!-- /acc-body Storico analisi -->
     </div>
   </div>
 
   <!-- ── CONTAORE ── -->
   <div id="regSect-contaore" class="reg-section" style="display:none;">
-    <div class="card">
-      <div class="card-title" id="contaoreFormTitle">Nuova lettura contaore</div>
+    <div class="card acc" id="contaoreFormCard">
+      <button type="button" class="acc-head"><span class="card-title" id="contaoreFormTitle">Nuova lettura contaore</span><span class="acc-chev">▾</span></button>
+      <div class="acc-body">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
         <div><label>Macchina</label>
           <select id="contaoreMacchina" style="margin-bottom:0;"></select>
@@ -996,17 +1012,21 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
         <button class="submit-btn" onclick="salvaContaore()" style="flex:1;">Salva lettura</button>
         <button id="contaoreCancelEdit" onclick="cancelEditContaore()" style="display:none;flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:12px;font-family:'DM Mono',monospace;font-size:13px;cursor:pointer;color:var(--text);">✕ Annulla</button>
       </div>
+      </div><!-- /acc-body Nuova contaore -->
     </div>
-    <div class="card" style="margin-top:14px;">
-      <div class="card-title">Storico contaore</div>
+    <div class="card acc" id="contaoreStoricoCard" style="margin-top:14px;">
+      <button type="button" class="acc-head"><span class="card-title" style="margin:0;">Storico contaore</span><span class="acc-chev">▾</span></button>
+      <div class="acc-body">
       <div id="contaoreStoricoList"></div>
+      </div>
     </div>
   </div>
 
   <!-- ── PRODUZIONE GAS ── -->
   <div id="regSect-gas" class="reg-section" style="display:none;">
-    <div class="card">
-      <div class="card-title" id="gasFormTitle">Nuova lettura biometano in rete</div>
+    <div class="card acc" id="gasFormCard">
+      <button type="button" class="acc-head"><span class="card-title" id="gasFormTitle">Nuova lettura biometano in rete</span><span class="acc-chev">▾</span></button>
+      <div class="acc-body">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
         <div><label>Data</label><input type="date" id="gasData" style="margin-bottom:0;"></div>
         <div><label>Ora lettura</label><input type="time" id="gasOra" style="margin-bottom:0;"></div>
@@ -1023,10 +1043,13 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
         <button class="submit-btn" onclick="salvaProdGas()" style="flex:1;">Salva lettura</button>
         <button id="gasCancelEdit" onclick="cancelEditGas()" style="display:none;flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:12px;font-family:'DM Mono',monospace;font-size:13px;cursor:pointer;color:var(--text);">✕ Annulla</button>
       </div>
+      </div><!-- /acc-body Nuova gas -->
     </div>
-    <div class="card" style="margin-top:14px;">
-      <div class="card-title">Storico biometano in rete</div>
+    <div class="card acc" id="gasStoricoCard" style="margin-top:14px;">
+      <button type="button" class="acc-head"><span class="card-title" style="margin:0;">Storico biometano in rete</span><span class="acc-chev">▾</span></button>
+      <div class="acc-body">
       <div id="gasStoricoList"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -1039,17 +1062,20 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
   <div id="andamentoAlerts"></div>
 
   <!-- Riepilogo ultima analisi per tipo -->
-  <div class="card">
-    <div class="card-title">📊 Ultima analisi per tipo</div>
+  <div class="card acc">
+    <button type="button" class="acc-head"><span class="card-title" style="margin:0;">📊 Ultima analisi per tipo</span><span class="acc-chev">▾</span></button>
+    <div class="acc-body">
     <div id="andamentoUltimeAnalisi"></div>
+    </div>
   </div>
 
   <!-- Griglia grafici: 1 colonna mobile, 2 colonne desktop -->
   <div class="and-chart-grid" style="margin-top:14px;">
 
     <!-- Trend analisi -->
-    <div class="card">
-      <div class="card-title">📈 Trend analisi</div>
+    <div class="card acc" data-acc-onopen="renderAndamentoGrafici">
+      <button type="button" class="acc-head"><span class="card-title" style="margin:0;">📈 Trend analisi</span><span class="acc-chev">▾</span></button>
+      <div class="acc-body">
       <div style="margin-bottom:10px;">
         <label>Tipo</label>
         <select id="andTrendTipo" onchange="onAndTrendTipoChange()" style="margin-bottom:0;">
@@ -1081,11 +1107,13 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
         </div>
       </div>
       <div class="and-canvas-wrap"><canvas id="andTrendChart" class="and-canvas"></canvas></div>
+      </div><!-- /acc-body Trend analisi -->
     </div>
 
     <!-- Trend biometano in rete -->
-    <div class="card">
-      <div class="card-title">⛽ Trend biometano in rete</div>
+    <div class="card acc" data-acc-onopen="renderAndamentoGas">
+      <button type="button" class="acc-head"><span class="card-title" style="margin:0;">⛽ Trend biometano in rete</span><span class="acc-chev">▾</span></button>
+      <div class="acc-body">
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.5;">
         Media giornaliera calcolata automaticamente tra le letture.<br>
         Il valore è sempre in Nm³/giorno, indipendentemente dalla frequenza di inserimento.
@@ -1098,11 +1126,13 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
         </div>
       </div>
       <div class="and-canvas-wrap"><canvas id="andGasChart" class="and-canvas"></canvas></div>
+      </div><!-- /acc-body Trend gas -->
     </div>
 
     <!-- Produzione biometano per punto — occupa tutta la larghezza -->
-    <div class="card and-chart-full">
-      <div class="card-title">🔋 Produzione biometano reale per punto (CH₄% × portata Nm³/h)</div>
+    <div class="card acc and-chart-full" data-acc-onopen="renderBiometanoPerPunto">
+      <button type="button" class="acc-head"><span class="card-title" style="margin:0;">🔋 Produzione biometano reale per punto (CH₄% × portata Nm³/h)</span><span class="acc-chev">▾</span></button>
+      <div class="acc-body">
       <div style="margin-bottom:8px;">
         <label>Periodo</label>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:400px;">
@@ -1111,6 +1141,7 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
         </div>
       </div>
       <div class="and-canvas-wrap"><canvas id="andBiometanoChart" class="and-canvas"></canvas></div>
+      </div><!-- /acc-body Biometano per punto -->
     </div>
 
   </div>
@@ -1480,6 +1511,22 @@ function populateSelects() {
   settings.box.forEach(b => { const e=document.createElement('option'); e.value=e.textContent=b; bx.appendChild(e); });
   if(curB) bx.value = curB;
 }
+
+// ── ACCORDION ─────────────────────────────────────────────────────────
+function accToggle(card, open){
+  if(!card) return;
+  if(open === undefined) open = !card.classList.contains('acc-open');
+  card.classList.toggle('acc-open', !!open);
+  if(open){
+    const fn = card.dataset.accOnopen;
+    if(fn && typeof window[fn] === 'function') setTimeout(()=>window[fn](), 30);
+  }
+}
+function accOpenById(id){ accToggle(document.getElementById(id), true); }
+document.addEventListener('click', e => {
+  const head = e.target.closest('.card.acc > .acc-head');
+  if(head) accToggle(head.parentElement);
+});
 
 // ── NAVIGATION ────────────────────────────────────────────────────────
 function showPage(name, btn) {
@@ -3004,6 +3051,7 @@ function editAnalisi(id) {
   editingAnalisiId = id;
   document.getElementById('analisiFormTitle').textContent = '✏️ Modifica analisi';
   document.getElementById('analisiCancelEdit').style.display = 'block';
+  accOpenById('analisiFormCard');
   document.getElementById('regSect-analisi').scrollIntoView({ behavior: 'smooth' });
 }
 
@@ -3354,6 +3402,7 @@ function editContaore(id) {
   editingContaoreId = id;
   document.getElementById('contaoreFormTitle').textContent = '✏️ Modifica lettura contaore';
   document.getElementById('contaoreCancelEdit').style.display = 'block';
+  accOpenById('contaoreFormCard');
   document.getElementById('regSect-contaore').scrollIntoView({ behavior: 'smooth' });
 }
 
@@ -3478,6 +3527,7 @@ function editProdGas(id) {
   editingGasId = id;
   document.getElementById('gasFormTitle').textContent = '✏️ Modifica lettura gas';
   document.getElementById('gasCancelEdit').style.display = 'block';
+  accOpenById('gasFormCard');
   document.getElementById('regSect-gas').scrollIntoView({ behavior: 'smooth' });
 }
 
