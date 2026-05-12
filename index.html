@@ -1147,10 +1147,71 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
   </div>
 </div>
 
+<!-- PAGE: DA FARE (operatore + admin) -->
+<div id="page-dafare" class="page">
+  <div class="slabel">Da fare</div>
+
+  <div class="card" id="dafareTodayCard">
+    <div class="card-title" id="dafareTodayTitle">📅 Oggi</div>
+    <div id="dafareTodayList"></div>
+    <div id="dafareTodayEmpty" style="display:none;text-align:center;color:var(--text-muted);font-size:13px;padding:20px 8px;">
+      Nessuna task pianificata per oggi.
+    </div>
+  </div>
+
+  <div class="card acc" id="dafareLateCard" style="display:none;border-color:#ffb74d;">
+    <button type="button" class="acc-head"><span class="card-title" style="margin:0;color:#e65100;">⚠️ In ritardo (<span id="dafareLateCount">0</span>)</span><span class="acc-chev">▾</span></button>
+    <div class="acc-body">
+      <div id="dafareLateList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: PIANIFICA (solo admin) -->
+<div id="page-pianifica" class="page">
+  <div class="slabel">Pianifica task</div>
+
+  <div class="card acc" id="pianificaNuovaCard">
+    <button type="button" class="acc-head"><span class="card-title" id="pianificaFormTitle" style="margin:0;">Nuova task</span><span class="acc-chev">▾</span></button>
+    <div class="acc-body">
+      <label>Data</label>
+      <input type="date" id="pianificaData" style="margin-bottom:10px;">
+      <label>Descrizione</label>
+      <textarea id="pianificaDescrizione" rows="2" placeholder="Es. Giro analisi biogas Garage 1-5" style="margin-bottom:10px;"></textarea>
+      <div style="display:flex;gap:8px;">
+        <button class="submit-btn" onclick="salvaTask()" style="flex:1;">Salva task</button>
+        <button id="pianificaCancelEdit" onclick="cancelEditTask()" style="display:none;flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:12px;font-family:'DM Mono',monospace;font-size:13px;cursor:pointer;color:var(--text);">✕ Annulla</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card acc" id="pianificaFutureCard">
+    <button type="button" class="acc-head"><span class="card-title" style="margin:0;">📋 Pianificate (da oggi in poi)</span><span class="acc-chev">▾</span></button>
+    <div class="acc-body">
+      <div id="pianificaFutureList"></div>
+    </div>
+  </div>
+
+  <div class="card acc" id="pianificaStoricoCard">
+    <button type="button" class="acc-head"><span class="card-title" style="margin:0;">🗂 Storico task completate</span><span class="acc-chev">▾</span></button>
+    <div class="acc-body">
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <input type="date" id="pianificaStoricoDa" oninput="renderPianificaStorico()" style="margin-bottom:0;flex:1;">
+        <input type="date" id="pianificaStoricoA" oninput="renderPianificaStorico()" style="margin-bottom:0;flex:1;">
+      </div>
+      <div id="pianificaStoricoList"></div>
+    </div>
+  </div>
+</div>
+
 <nav class="nav">
   <button class="nb active" data-page="inserimento" onclick="showPage('inserimento',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
     Inserisci
+  </button>
+  <button class="nb" data-page="dafare" onclick="showPage('dafare',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    Da fare
   </button>
   <button class="nb" data-page="riepilogo" onclick="showPage('riepilogo',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
@@ -1180,6 +1241,10 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
     Registro
   </button>
+  <button class="nb" data-page="pianifica" onclick="showPage('pianifica',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg>
+    Pianifica
+  </button>
 </nav>
 
 </div><!-- /appContent -->
@@ -1200,8 +1265,8 @@ let userRole = 'operatore'; // admin | operatore | supervisore | solo_inseriment
 
 // Pagine accessibili per ruolo
 const ROLE_PAGES = {
-  admin:            ['inserimento','riepilogo','storico','grafici','depositi','scenari','andamento','registro'],
-  operatore:        ['inserimento','storico'],
+  admin:            ['inserimento','dafare','riepilogo','storico','grafici','depositi','scenari','andamento','registro','pianifica'],
+  operatore:        ['inserimento','dafare','storico'],
   supervisore:      ['riepilogo','grafici','depositi','scenari','andamento'],
   solo_inserimento: ['inserimento']
 };
@@ -1247,9 +1312,11 @@ const SOGLIE_DEFAULT = {
 let analisiData = [];
 let contaoreData = [];
 let produzioneGasData = [];
+let taskData = [];
 let editingAnalisiId = null;
 let editingContaoreId = null;
 let editingGasId = null;
+let editingTaskId = null;
 
 // ══════════════════════════════════════════════════════════════════════
 // AUTH
@@ -1402,6 +1469,12 @@ async function loadAllData() {
     contaoreData = coRes.data||[];
     produzioneGasData = pgRes.data||[];
   } catch(e) { console.log('Tabelle registro impianto non ancora create'); }
+
+  // Carica task pianificate (solo se la tabella esiste)
+  try {
+    const { data } = await sb.from('task_pianificati').select('*').order('data', { ascending: true });
+    taskData = data || [];
+  } catch(e) { console.log('Tabella task_pianificati non ancora creata'); }
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -1541,6 +1614,8 @@ function showPage(name, btn) {
   if(name==='scenari')   { renderPrevisione(); renderObiettivoSuggestion(); renderSimulatore(); initMultiFase(); renderMultiFase(); }
   if(name==='andamento') { renderAndamento(); }
   if(name==='registro')  { renderRegistroImpianto(); }
+  if(name==='dafare')    { renderDafare(); }
+  if(name==='pianifica') { renderPianifica(); }
 }
 
 // ── CHIPS ─────────────────────────────────────────────────────────────
@@ -2855,6 +2930,234 @@ function toggleRegChip(sect, btn) {
   document.querySelectorAll('.reg-section').forEach(s => s.style.display = 'none');
   document.getElementById('regSect-' + sect).style.display = 'block';
   if (sect === 'contaore') populateContaoreMacchine();
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// TASK PIANIFICATI (Da fare / Pianifica)
+// ══════════════════════════════════════════════════════════════════════
+function todayISO() { return new Date().toISOString().split('T')[0]; }
+function nomeOperatoreCorrente() {
+  return currentUser?.email ? currentUser.email.split('@')[0] : 'sconosciuto';
+}
+
+function renderDafare() {
+  renderDafareToday();
+  renderDafareLate();
+}
+
+function renderDafareToday() {
+  const today = todayISO();
+  const list = taskData.filter(t => t.data === today)
+                       .sort((a, b) => Number(a.completato) - Number(b.completato));
+  const c = document.getElementById('dafareTodayList');
+  const empty = document.getElementById('dafareTodayEmpty');
+  if (!c) return;
+  if (!list.length) {
+    c.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  c.innerHTML = list.map(t => taskRowHtml(t, false)).join('');
+}
+
+function renderDafareLate() {
+  const today = todayISO();
+  const late = taskData.filter(t => t.data < today && !t.completato);
+  const card = document.getElementById('dafareLateCard');
+  const c = document.getElementById('dafareLateList');
+  const cnt = document.getElementById('dafareLateCount');
+  if (!card || !c) return;
+  if (!late.length) { card.style.display = 'none'; return; }
+  card.style.display = '';
+  cnt.textContent = late.length;
+  c.innerHTML = late.sort((a, b) => a.data.localeCompare(b.data))
+                    .map(t => taskRowHtml(t, true)).join('');
+}
+
+function taskRowHtml(t, showDate) {
+  const done = !!t.completato;
+  const dateLabel = showDate ? `<div style="font-size:10px;color:#e65100;font-weight:600;margin-bottom:4px;">${formatDataIT(t.data)}</div>` : '';
+  const meta = done
+    ? `<div style="font-size:10px;color:var(--text-muted);margin-top:6px;">✓ Fatta da ${escapeHtmlTask(t.completato_da||'?')} · ${t.completato_at ? new Date(t.completato_at).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : ''}</div>`
+    : '';
+  const btn = done
+    ? `<button onclick="unspuntaTask('${t.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text-muted);padding:6px 10px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;">Annulla</button>`
+    : `<button onclick="spuntaTask('${t.id}')" style="background:var(--accent);border:none;border-radius:6px;color:#fff;padding:6px 12px;font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;font-weight:600;">✓ Fatta</button>`;
+  const bg = done ? 'background:var(--surface2);' : '';
+  const strike = done ? 'text-decoration:line-through;color:var(--text-dim);' : '';
+  return `<div class="log-entry" style="${bg}padding:12px;margin-bottom:8px;">
+    ${dateLabel}
+    <div style="display:flex;align-items:flex-start;gap:10px;">
+      <div style="flex:1;${strike}font-size:13px;line-height:1.45;white-space:pre-wrap;">${escapeHtmlTask(t.descrizione)}</div>
+      <div style="flex-shrink:0;">${btn}</div>
+    </div>
+    ${meta}
+  </div>`;
+}
+
+function formatDataIT(iso) {
+  if (!iso) return '';
+  const d = new Date(iso + 'T00:00:00');
+  return d.toLocaleDateString('it-IT', { weekday:'short', day:'2-digit', month:'2-digit' });
+}
+
+function escapeHtmlTask(s) {
+  return String(s||'').replace(/[&<>"\']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function spuntaTask(id) {
+  const t = taskData.find(x => x.id === id);
+  if (!t || t.completato) return;
+  showSaving();
+  const patch = {
+    completato: true,
+    completato_da: nomeOperatoreCorrente(),
+    completato_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+  const { error } = await sb.from('task_pianificati').update(patch).eq('id', id);
+  if (error) { showToast('Errore: '+error.message, '#ff6b35'); return; }
+  Object.assign(t, patch);
+  renderDafare();
+  if (isAdmin) renderPianifica();
+  showToast('✓ Task completata');
+}
+
+async function unspuntaTask(id) {
+  const t = taskData.find(x => x.id === id);
+  if (!t || !t.completato) return;
+  if (!confirm('Annullare il completamento di questa task?')) return;
+  showSaving();
+  const patch = {
+    completato: false,
+    completato_da: null,
+    completato_at: null,
+    updated_at: new Date().toISOString()
+  };
+  const { error } = await sb.from('task_pianificati').update(patch).eq('id', id);
+  if (error) { showToast('Errore: '+error.message, '#ff6b35'); return; }
+  Object.assign(t, patch);
+  renderDafare();
+  if (isAdmin) renderPianifica();
+}
+
+function renderPianifica() {
+  const dataEl = document.getElementById('pianificaData');
+  if (dataEl && !dataEl.value) dataEl.value = todayISO();
+  const stoDa = document.getElementById('pianificaStoricoDa');
+  const stoA  = document.getElementById('pianificaStoricoA');
+  if (stoDa && !stoDa.value) {
+    const d = new Date(); d.setDate(d.getDate() - 30);
+    stoDa.value = d.toISOString().split('T')[0];
+  }
+  if (stoA && !stoA.value) stoA.value = todayISO();
+  renderPianificaFuture();
+  renderPianificaStorico();
+}
+
+function renderPianificaFuture() {
+  const today = todayISO();
+  const fut = taskData.filter(t => t.data >= today)
+                      .sort((a, b) => a.data.localeCompare(b.data));
+  const c = document.getElementById('pianificaFutureList');
+  if (!c) return;
+  if (!fut.length) { c.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:10px 0;">Nessuna task pianificata.</div>'; return; }
+  c.innerHTML = fut.map(t => taskAdminRowHtml(t)).join('');
+}
+
+function renderPianificaStorico() {
+  const da = document.getElementById('pianificaStoricoDa')?.value || '';
+  const a  = document.getElementById('pianificaStoricoA')?.value || '';
+  let list = taskData.filter(t => t.completato);
+  if (da) list = list.filter(t => t.data >= da);
+  if (a)  list = list.filter(t => t.data <= a);
+  list.sort((x, y) => y.data.localeCompare(x.data));
+  const c = document.getElementById('pianificaStoricoList');
+  if (!c) return;
+  if (!list.length) { c.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:10px 0;">Nessuna task completata in questo periodo.</div>'; return; }
+  c.innerHTML = list.map(t => taskAdminRowHtml(t)).join('');
+}
+
+function taskAdminRowHtml(t) {
+  const stato = t.completato
+    ? `<span style="color:var(--accent);font-weight:600;">✓ Fatta</span> da ${escapeHtmlTask(t.completato_da||'?')} il ${t.completato_at ? new Date(t.completato_at).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : ''}`
+    : `<span style="color:var(--text-muted);">In attesa</span>`;
+  return `<div class="log-entry" style="padding:12px;margin-bottom:8px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px;">
+      <div style="font-size:11px;color:var(--accent);font-weight:600;">${formatDataIT(t.data)}</div>
+      <div style="display:flex;gap:6px;flex-shrink:0;">
+        <button onclick="editTask('${t.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text-dim);width:32px;height:32px;cursor:pointer;font-size:13px;">✏️</button>
+        <button onclick="deleteTask('${t.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--accent2);width:32px;height:32px;cursor:pointer;font-size:13px;">🗑</button>
+      </div>
+    </div>
+    <div style="font-size:13px;line-height:1.45;white-space:pre-wrap;margin-bottom:6px;">${escapeHtmlTask(t.descrizione)}</div>
+    <div style="font-size:10px;color:var(--text-muted);">${stato}</div>
+  </div>`;
+}
+
+async function salvaTask() {
+  if (!isAdmin) { showToast('Solo l\'admin può creare task', '#ff6b35'); return; }
+  const data = document.getElementById('pianificaData').value;
+  const desc = document.getElementById('pianificaDescrizione').value.trim();
+  if (!data) { showToast('Inserisci la data', '#ff6b35'); return; }
+  if (!desc) { showToast('Inserisci la descrizione', '#ff6b35'); return; }
+  showSaving();
+  if (editingTaskId) {
+    const patch = { data, descrizione: desc, updated_at: new Date().toISOString() };
+    const { error } = await sb.from('task_pianificati').update(patch).eq('id', editingTaskId);
+    if (error) { showToast('Errore: '+error.message, '#ff6b35'); return; }
+    const t = taskData.find(x => x.id === editingTaskId);
+    if (t) Object.assign(t, patch);
+    editingTaskId = null;
+    document.getElementById('pianificaFormTitle').textContent = 'Nuova task';
+    document.getElementById('pianificaCancelEdit').style.display = 'none';
+    showToast('✓ Task aggiornata');
+  } else {
+    const record = {
+      data, descrizione: desc,
+      created_by: currentUser?.id || null
+    };
+    const { data: inserted, error } = await sb.from('task_pianificati').insert(record).select().single();
+    if (error) { showToast('Errore: '+error.message, '#ff6b35'); return; }
+    taskData.push(inserted);
+    showToast('✓ Task creata');
+  }
+  document.getElementById('pianificaDescrizione').value = '';
+  renderPianifica();
+}
+
+function editTask(id) {
+  const t = taskData.find(x => x.id === id);
+  if (!t) return;
+  editingTaskId = id;
+  document.getElementById('pianificaData').value = t.data;
+  document.getElementById('pianificaDescrizione').value = t.descrizione;
+  document.getElementById('pianificaFormTitle').textContent = '✏️ Modifica task';
+  document.getElementById('pianificaCancelEdit').style.display = 'block';
+  accOpenById('pianificaNuovaCard');
+  document.getElementById('pianificaNuovaCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+function cancelEditTask() {
+  editingTaskId = null;
+  document.getElementById('pianificaData').value = todayISO();
+  document.getElementById('pianificaDescrizione').value = '';
+  document.getElementById('pianificaFormTitle').textContent = 'Nuova task';
+  document.getElementById('pianificaCancelEdit').style.display = 'none';
+}
+
+async function deleteTask(id) {
+  if (!isAdmin) return;
+  const t = taskData.find(x => x.id === id);
+  if (!t) return;
+  if (!confirm('Eliminare definitivamente questa task?\n\n"' + t.descrizione.slice(0, 80) + '"')) return;
+  showSaving();
+  const { error } = await sb.from('task_pianificati').delete().eq('id', id);
+  if (error) { showToast('Errore: '+error.message, '#ff6b35'); return; }
+  taskData = taskData.filter(x => x.id !== id);
+  renderPianifica();
+  showToast('Task eliminata');
 }
 
 function renderRegistroImpianto() {
