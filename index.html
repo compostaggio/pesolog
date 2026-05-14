@@ -1781,7 +1781,8 @@ async function salvaReport() {
   const box    = document.getElementById('boxInput').value;
   const ammQta = parseFloat(document.getElementById('ammQtaInput').value)||0;
   const ammDa  = document.getElementById('ammDaInput').value.trim();
-  const ammendante = box ? {box,qta:ammQta,da:ammDa} : null;
+  // rev7: gatekeeper su QTA (era box). Box è ormai opzionale (vedi docx).
+  const ammendante = (ammQta > 0) ? {box: box||'', qta: ammQta, da: ammDa} : null;
 
   if(materiali.length===0 && !camion && !ammendante){ showToast('⚠ Nessun dato da salvare','#ff6b35'); return; }
 
@@ -1791,10 +1792,13 @@ async function salvaReport() {
   const firma_png = (signaturePadMain && !signaturePadMain.isEmpty())
     ? signaturePadMain.toDataURL('image/png')
     : null;
+  // 'operatore' (legacy, singolo) popolato col primo dell'array per retro-compat
+  // (richiesto finché la colonna legacy resta nel DB)
+  const operatore = operatori[0] || null;
   const newReport = {
     id: Date.now(),
     user_id: currentUser.id,
-    data, operatori, turno, materiali, camion, ammendante, totale,
+    data, operatore, operatori, turno, materiali, camion, ammendante, totale,
     attivita, problemi, firma_png,
     ts: new Date().toISOString()
   };
@@ -1990,7 +1994,7 @@ function renderStorico() {
       <div class="log-tags">
         ${(r.materiali||[]).map(m=>`<div class="tag">${m.nome} <span>${fmtPeso(m.peso)}${m.da||m.a?' · '+[m.da,m.a].filter(Boolean).join('→'):''}</span></div>`).join('')}
         ${r.camion?.carichi?.map(c=>`<div class="tag truck">🚛 ${c.nome} <span>${c.peso?fmtPeso(c.peso):''} ${c.numCamion?'· '+c.numCamion+' cam':''}</span></div>`).join('')||''}
-        ${r.ammendante?`<div class="tag box">🌱 <span>${r.ammendante.da?r.ammendante.da+' → ':''} ${r.ammendante.box} — ${fmtPeso(r.ammendante.qta)}</span></div>`:''}
+        ${r.ammendante?`<div class="tag box">🌱 <span>${r.ammendante.da?r.ammendante.da+' → ':''}${r.ammendante.box||'Non specificato'} — ${fmtPeso(r.ammendante.qta)}</span></div>`:''}
       </div>
       ${r.attivita?`<div class="log-note"><strong>Attività:</strong> ${r.attivita}</div>`:''}
       ${r.problemi?`<div class="log-note" style="color:#c62828;"><strong>Problemi:</strong> ${r.problemi}</div>`:''}
@@ -2345,14 +2349,16 @@ async function saveEdit() {
   const editBox=document.getElementById('editBoxInput').value;
   const editAmmQta=parseFloat(document.getElementById('editAmmQta').value)||0;
   const editAmmDa=document.getElementById('editAmmDa').value.trim();
-  const ammendante=editBox?{box:editBox,qta:editAmmQta,da:editAmmDa}:null;
+  // rev7: gatekeeper su QTA (era box). Box è ormai opzionale.
+  const ammendante=(editAmmQta>0)?{box:editBox||'',qta:editAmmQta,da:editAmmDa}:null;
   const totCarichi=carichi.reduce((s,c)=>s+c.peso,0);
   const totale=materiali.reduce((s,m)=>s+m.peso,0)+totCarichi+(ammendante?.qta||0);
   // Firma: se l'utente ha disegnato qualcosa, salva; se ha pulito senza ridisegnare, lascia firma esistente
   const firma_png = (signaturePadEdit && !signaturePadEdit.isEmpty())
     ? signaturePadEdit.toDataURL('image/png')
     : reports[idx].firma_png || null;
-  const updated={...reports[idx],data,operatori,turno,materiali,camion,ammendante,totale,attivita,problemi,firma_png};
+  const operatore = operatori[0] || null; // retro-compat colonna legacy
+  const updated={...reports[idx],data,operatore,operatori,turno,materiali,camion,ammendante,totale,attivita,problemi,firma_png};
   try{
     await dbUpsertReport(updated);
     reports[idx]=updated;
