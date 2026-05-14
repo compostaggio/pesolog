@@ -3576,10 +3576,33 @@ async function generaPdfGiornata() {
     page.drawRectangle({ x, y: yy - sectOperatoriH, width: colW, height: sectOperatoriH, borderColor: black, borderWidth: 0.4 });
     page.drawText('OPERATORI:', { x: x + 4, y: yy - 11, size: 8, font: helvB });
     if (rep) {
-      const ops = (rep.operatori && rep.operatori.length) ? rep.operatori : (rep.operatore ? [rep.operatore] : []);
-      ops.forEach((o, k) => {
-        page.drawText(o, { x: x + 4, y: yy - 22 - k*10, size: 8.5, font: helv });
-      });
+      let ops = (rep.operatori && rep.operatori.length) ? rep.operatori : (rep.operatore ? [rep.operatore] : []);
+      // Cap a 8 nomi (max 2 colonne x 4 righe). Oltre: "+ N altri"
+      let suffix = '';
+      if (ops.length > 8) { suffix = ' (+'+(ops.length-7)+' altri)'; ops = ops.slice(0, 7); }
+      if (ops.length <= 4) {
+        // Layout 1 colonna (come cartaceo)
+        ops.forEach((o, k) => {
+          let drawn = o;
+          while (helv.widthOfTextAtSize(drawn, 8.5) > (colW - 8) && drawn.length > 1) drawn = drawn.slice(0, -1);
+          page.drawText(drawn, { x: x + 4, y: yy - 22 - k*10, size: 8.5, font: helv });
+        });
+      } else {
+        // Layout 2 colonne (5..8 nomi)
+        const half = Math.ceil(ops.length / 2);
+        const colWHalf = (colW - 10) / 2;
+        ops.forEach((o, k) => {
+          const isLeft = k < half;
+          const xPos = x + 4 + (isLeft ? 0 : colWHalf + 6);
+          const yPos = yy - 22 - (k % half) * 10;
+          let drawn = o;
+          while (helv.widthOfTextAtSize(drawn, 8.5) > colWHalf && drawn.length > 1) drawn = drawn.slice(0, -1);
+          page.drawText(drawn, { x: xPos, y: yPos, size: 8.5, font: helv });
+        });
+        if (suffix) {
+          page.drawText(suffix, { x: x + 4, y: yy - 22 - half*10 + 2, size: 7, font: helv, color: rgb(0.45,0.45,0.45) });
+        }
+      }
     }
     yy -= sectOperatoriH;
 
