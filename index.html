@@ -1705,6 +1705,18 @@ function toggleChip(chip) {
   document.getElementById('sect-ammendante').style.display = activeSects.has('ammendante')  ? '' : 'none';
 }
 
+// Helper: costruisce HTML <option> per i select Materiale/Tipo carico
+function buildMaterialeOptionsHTML(selectedValue) {
+  const sel = selectedValue || '';
+  const opts = ['<option value="">Seleziona materiale...</option>'];
+  (settings.materiali || []).forEach(m => {
+    const isSel = (m === sel) ? ' selected' : '';
+    const safe = m.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    opts.push('<option value="'+safe+'"'+isSel+'>'+safe+'</option>');
+  });
+  return opts.join('');
+}
+
 // ── MATERIAL ROWS ─────────────────────────────────────────────────────
 let matCnt = 0;
 function addMaterial() {
@@ -1724,7 +1736,7 @@ function addMaterial() {
   div.className='mat-row'; div.id=id;
   div.style.cssText='display:grid;grid-template-columns:2fr 1fr 1fr 1fr 34px;gap:6px;align-items:center;margin-bottom:8px;';
   div.innerHTML=`
-    <input type="text" class="mn" placeholder="Materiale" list="dl_mat" style="margin-bottom:0;" autocomplete="off">
+    <select class="mn" style="margin-bottom:0;">${buildMaterialeOptionsHTML('')}</select>
     <input type="number" class="mp" placeholder="kg" min="0" step="1" inputmode="numeric" style="margin-bottom:0;">
     <input type="text" class="mda" placeholder="Da" list="dl_luoghi" style="margin-bottom:0;" autocomplete="off">
     <input type="text" class="ma" placeholder="A" list="dl_luoghi" style="margin-bottom:0;" autocomplete="off">
@@ -1743,7 +1755,7 @@ function addCamionRow() {
   const div=document.createElement('div');
   div.className='mat-row'; div.id=id;
   div.style.cssText='display:grid;grid-template-columns:2fr 1fr 1fr 34px;gap:6px;align-items:center;margin-bottom:8px;';
-  div.innerHTML=`<input type="text" class="cn" placeholder="Tipo carico" list="dl_mat" style="margin-bottom:0;" autocomplete="off"><input type="number" class="cp" placeholder="kg" min="0" step="1" inputmode="numeric" style="margin-bottom:0;"><input type="number" class="cc" placeholder="n°" min="0" inputmode="numeric" style="margin-bottom:0;text-align:center;"><button class="rm-btn" onclick="removeCamionRow('${id}')">✕</button>`;
+  div.innerHTML=`<select class="cn" style="margin-bottom:0;">${buildMaterialeOptionsHTML('')}</select><input type="number" class="cp" placeholder="kg" min="0" step="1" inputmode="numeric" style="margin-bottom:0;"><input type="number" class="cc" placeholder="n°" min="0" inputmode="numeric" style="margin-bottom:0;text-align:center;"><button class="rm-btn" onclick="removeCamionRow('${id}')">✕</button>`;
   document.getElementById('camionList').appendChild(div);
 }
 function removeCamionRow(id) {
@@ -2300,7 +2312,7 @@ function addEditMaterial(data) {
   const div=document.createElement('div');
   div.className='mat-row'; div.id=id;
   div.style.cssText='display:grid;grid-template-columns:2fr 1fr 1fr 1fr 34px;gap:6px;align-items:center;margin-bottom:8px;';
-  div.innerHTML=`<input type="text" class="mn" placeholder="Materiale" list="dl_mat" style="margin-bottom:0;" value="${data?.nome||''}">
+  div.innerHTML=`<select class="mn" style="margin-bottom:0;">${buildMaterialeOptionsHTML(data?.nome||'')}</select>
     <input type="number" class="mp" placeholder="kg" min="0" step="0.1" style="margin-bottom:0;" value="${data?.peso||''}">
     <input type="text" class="mda" placeholder="Da" list="dl_luoghi" style="margin-bottom:0;" value="${data?.da||''}">
     <input type="text" class="ma" placeholder="A" list="dl_luoghi" style="margin-bottom:0;" value="${data?.a||''}">
@@ -2314,7 +2326,7 @@ function addEditCamionRow(data) {
   const div=document.createElement('div');
   div.className='mat-row'; div.id=id;
   div.style.cssText='display:grid;grid-template-columns:2fr 1fr 1fr 34px;gap:6px;align-items:center;margin-bottom:8px;';
-  div.innerHTML=`<input type="text" class="cn" placeholder="Tipo carico" list="dl_mat" style="margin-bottom:0;" value="${data?.nome||''}">
+  div.innerHTML=`<select class="cn" style="margin-bottom:0;">${buildMaterialeOptionsHTML(data?.nome||'')}</select>
     <input type="number" class="cp" placeholder="kg" min="0" step="0.1" style="margin-bottom:0;" value="${data?.peso||''}">
     <input type="number" class="cc" placeholder="n° cam" min="0" style="margin-bottom:0;text-align:center;" value="${data?.numCamion||''}">
     <button class="rm-btn" onclick="this.closest('.mat-row').remove()">✕</button>`;
