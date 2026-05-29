@@ -3064,7 +3064,7 @@ function toggleRegChip(sect, btn) {
 // ══════════════════════════════════════════════════════════════════════
 // TASK PIANIFICATI (Da fare / Pianifica)
 // ══════════════════════════════════════════════════════════════════════
-function todayISO() { return new Date().toISOString().split('T')[0]; }
+function todayISO() { return new Date().toLocaleDateString('sv', {timeZone: 'Europe/Rome'}); }
 function nomeOperatoreCorrente() {
   return currentUser?.email ? currentUser.email.split('@')[0] : 'sconosciuto';
 }
