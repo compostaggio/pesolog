@@ -1279,6 +1279,7 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
   <button class="nb" data-page="storico" onclick="showPage('storico',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
     Storico
+    <span class="nb-badge" id="problemiBadge" style="display:none;">!</span>
   </button>
   <button class="nb" data-page="grafici" onclick="showPage('grafici',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 19 9 5 6 12 2 12"/></svg>
@@ -1497,6 +1498,7 @@ function showApp() {
   roleEl.style.cssText = 'font-size:10px;color:var(--text-muted);padding:4px 14px 8px;border-bottom:1px solid var(--border);margin-bottom:4px;';
   roleEl.textContent = roleLabels[userRole] || userRole;
   document.getElementById('hdrDropdown').insertBefore(roleEl, document.getElementById('hdrDropdown').firstChild);
+  try { updateProblemiBadge(); } catch(e) {}
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -1543,6 +1545,7 @@ async function loadAllData() {
   } catch(e) { console.log('Tabella task_pianificati non ancora creata'); }
   // rev7.6: aggiorna badge subito dopo il caricamento iniziale
   try { updateDafareBadge(); } catch(e) {}
+  try { updateProblemiBadge(); } catch(e) {}
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -1688,7 +1691,7 @@ function showPage(name, btn) {
   document.getElementById('page-'+name).classList.add('active');
   btn.classList.add('active');
   if(name==='riepilogo') renderRiepilogo();
-  if(name==='storico')   renderStorico();
+  if(name==='storico')   { renderStorico(); markProblemiSeen(); }
   if(name==='grafici')   renderGrafici();
   if(name==='depositi')  renderDepositi();
   if(name==='scenari')   { renderPrevisione(); renderObiettivoSuggestion(); renderSimulatore(); initMultiFase(); renderMultiFase(); }
@@ -2004,7 +2007,7 @@ function renderStorico() {
   c.innerHTML=sorted.map(r=>`
     <div class="log-entry">
       <div class="log-hdr">
-        <div><div class="log-date">${fmtData(r.data)} — ${r.turno}</div><div class="log-sub">${((r.operatori&&r.operatori.length)?r.operatori.join(', '):(r.operatore||'—'))}${r.firma_png?' · ✍️':''}</div></div>
+        <div><div class="log-date">${fmtData(r.data)} — ${r.turno}</div><div class="log-sub">${((r.operatori&&r.operatori.length)?r.operatori.join(', '):(r.operatore||'—'))}${r.firma_png?' · ✍️':''}</div>${fmtInserito(r.created_at, r.data)}</div>
         <div class="log-total">${fmtPeso(r.totale)}</div>
       </div>
       <div class="log-tags">
@@ -3067,6 +3070,47 @@ function toggleRegChip(sect, btn) {
 function todayISO() { return new Date().toLocaleDateString('sv', {timeZone: 'Europe/Rome'}); }
 function nomeOperatoreCorrente() {
   return currentUser?.email ? currentUser.email.split('@')[0] : 'sconosciuto';
+}
+
+// rev7.7 (#1): data di inserimento (created_at) nello Storico
+function fmtInserito(createdAt, dataReport) {
+  if (!createdAt) return '';
+  const d = new Date(createdAt);
+  if (isNaN(d.getTime())) return '';
+  const ins = d.toLocaleString('it-IT', {timeZone:'Europe/Rome', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
+  let diff = 0;
+  if (dataReport) {
+    const insDay = d.toLocaleDateString('sv', {timeZone:'Europe/Rome'});
+    const a = new Date(insDay + 'T00:00:00');
+    const b = new Date(dataReport + 'T00:00:00');
+    if (!isNaN(a.getTime()) && !isNaN(b.getTime())) diff = Math.round(Math.abs(a - b) / 86400000);
+  }
+  const flag = diff > 1;
+  const col = flag ? '#c62828' : 'var(--text-muted)';
+  const warn = flag ? (' &middot; &#9888; ' + diff + ' gg di scarto dalla data report') : '';
+  return '<div class="log-sub" style="color:' + col + ';font-size:10px;margin-top:2px;">&#128336; Inserito il ' + ins + warn + '</div>';
+}
+
+// rev7.7 (#2): badge "!" sull'icona Storico quando ci sono problemi non ancora visti (solo admin)
+function updateProblemiBadge() {
+  const el = document.getElementById('problemiBadge');
+  if (!el) return;
+  if (!isAdmin) { el.style.display = 'none'; return; }
+  let seen = '';
+  try { seen = localStorage.getItem('problemiSeenAt') || ''; } catch(e) {}
+  const n = (reports || []).filter(r => {
+    if (!r.problemi || !String(r.problemi).trim()) return false;
+    if (!r.created_at) return true;
+    if (!seen) return true;
+    return new Date(r.created_at) > new Date(seen);
+  }).length;
+  el.style.display = (n > 0) ? '' : 'none';
+}
+
+// rev7.7 (#2): marca i problemi come "visti" quando l'admin apre lo Storico
+function markProblemiSeen() {
+  try { localStorage.setItem('problemiSeenAt', new Date().toISOString()); } catch(e) {}
+  updateProblemiBadge();
 }
 
 function updateDafareBadge() {
