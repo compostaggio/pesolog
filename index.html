@@ -1243,6 +1243,19 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
     </div>
   </div>
 
+  <div class="card acc" id="viaggioNuovaCard">
+    <button type="button" class="acc-head"><span class="card-title" style="margin:0;">🚛 Viaggio in uscita</span><span class="acc-chev">▾</span></button>
+    <div class="acc-body">
+      <label>Data</label>
+      <input type="date" id="viaggioData" style="margin-bottom:10px;">
+      <label>Materiale</label>
+      <select id="viaggioMateriale" style="margin-bottom:10px;"></select>
+      <label>N° camion</label>
+      <input type="number" id="viaggioCamion" inputmode="numeric" min="1" step="1" placeholder="Es. 2" style="margin-bottom:10px;">
+      <button class="submit-btn" onclick="salvaViaggio()" style="width:100%;">Salva viaggio</button>
+    </div>
+  </div>
+
   <div class="card acc" id="pianificaFutureCard">
     <button type="button" class="acc-head"><span class="card-title" style="margin:0;">📋 Pianificate (da oggi in poi)</span><span class="acc-chev">▾</span></button>
     <div class="acc-body">
@@ -3073,9 +3086,20 @@ function nomeOperatoreCorrente() {
 }
 
 // rev7.7 (#1): data di inserimento (created_at) nello Storico
+// rev7.7.1: parsing robusto dei timestamp Supabase (iOS/Safari non parsa i microsecondi)
+function parseTS(ts) {
+  if (!ts) return new Date(NaN);
+  if (ts instanceof Date) return ts;
+  let s = String(ts).trim().replace(' ', 'T');
+  s = s.replace(/(\.\d{3})\d+/, '$1');            // microsecondi -> millisecondi
+  if (/[+-]\d{2}$/.test(s)) s += ':00';            // offset +00 -> +00:00
+  if (!/[zZ]$|[+-]\d{2}:\d{2}$/.test(s)) s += 'Z'; // nessun fuso -> assume UTC
+  return new Date(s);
+}
+
 function fmtInserito(createdAt, dataReport) {
   if (!createdAt) return '';
-  const d = new Date(createdAt);
+  const d = parseTS(createdAt);
   if (isNaN(d.getTime())) return '';
   const ins = d.toLocaleString('it-IT', {timeZone:'Europe/Rome', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
   let diff = 0;
@@ -3102,7 +3126,7 @@ function updateProblemiBadge() {
     if (!r.problemi || !String(r.problemi).trim()) return false;
     if (!r.created_at) return true;
     if (!seen) return true;
-    return new Date(r.created_at) > new Date(seen);
+    return parseTS(r.created_at) > new Date(seen);
   }).length;
   el.style.display = (n > 0) ? '' : 'none';
 }
@@ -3176,8 +3200,9 @@ function taskRowHtml(t, showDate) {
     ? `<button onclick="unspuntaTask('${t.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text-muted);padding:6px 10px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;">Annulla</button>`
     : `<button onclick="spuntaTask('${t.id}')" style="background:var(--accent);border:none;border-radius:6px;color:#fff;padding:6px 12px;font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;font-weight:600;">✓ Fatta</button>`;
   const bg = done ? 'background:var(--surface2);' : '';
+  const viagBorder = isViaggioTask(t) ? 'border-left:3px solid #e65100;' : '';
   const strike = done ? 'text-decoration:line-through;color:var(--text-dim);' : '';
-  return `<div class="log-entry" style="${bg}padding:12px;margin-bottom:8px;">
+  return `<div class="log-entry" style="${bg}${viagBorder}padding:12px;margin-bottom:8px;">
     ${dateLabel}
     <div style="display:flex;align-items:flex-start;gap:10px;">
       <div style="flex:1;${strike}font-size:13px;line-height:1.45;white-space:pre-wrap;">${escapeHtmlTask(t.descrizione)}</div>
@@ -3236,6 +3261,9 @@ async function unspuntaTask(id) {
 function renderPianifica() {
   const dataEl = document.getElementById('pianificaData');
   if (dataEl && !dataEl.value) dataEl.value = todayISO();
+  const vData = document.getElementById('viaggioData');
+  if (vData && !vData.value) vData.value = todayISO();
+  populateViaggioMateriale();
   const stoDa = document.getElementById('pianificaStoricoDa');
   const stoA  = document.getElementById('pianificaStoricoA');
   if (stoDa && !stoDa.value) {
@@ -3271,10 +3299,11 @@ function renderPianificaStorico() {
 }
 
 function taskAdminRowHtml(t) {
+  const viagBorder = isViaggioTask(t) ? 'border-left:3px solid #e65100;' : '';
   const stato = t.completato
     ? `<span style="color:var(--accent);font-weight:600;">✓ Fatta</span> da ${escapeHtmlTask(t.completato_da||'?')} il ${t.completato_at ? new Date(t.completato_at).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : ''}`
     : `<span style="color:var(--text-muted);">In attesa</span>`;
-  return `<div class="log-entry" style="padding:12px;margin-bottom:8px;">
+  return `<div class="log-entry" style="${viagBorder}padding:12px;margin-bottom:8px;">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px;">
       <div style="font-size:11px;color:var(--accent);font-weight:600;">${formatDataIT(t.data)}</div>
       <div style="display:flex;gap:6px;flex-shrink:0;">
@@ -3285,6 +3314,34 @@ function taskAdminRowHtml(t) {
     <div style="font-size:13px;line-height:1.45;white-space:pre-wrap;margin-bottom:6px;">${escapeHtmlTask(t.descrizione)}</div>
     <div style="font-size:10px;color:var(--text-muted);">${stato}</div>
   </div>`;
+}
+
+// rev7.8 (#3): viaggi in uscita programmati — riusano la tabella task_pianificati
+function isViaggioTask(t) {
+  return !!(t && t.descrizione && t.descrizione.trimStart().startsWith('🚛'));
+}
+function populateViaggioMateriale() {
+  const sel = document.getElementById('viaggioMateriale');
+  if (sel) sel.innerHTML = buildMaterialeOptionsHTML('');
+}
+async function salvaViaggio() {
+  if (!isAdmin) { showToast('Solo l\'admin pu\u00F2 pianificare viaggi', '#ff6b35'); return; }
+  const data = document.getElementById('viaggioData').value;
+  const mat  = document.getElementById('viaggioMateriale').value;
+  const n = parseInt(document.getElementById('viaggioCamion').value, 10);
+  if (!data) { showToast('Inserisci la data', '#ff6b35'); return; }
+  if (!mat)  { showToast('Seleziona il materiale', '#ff6b35'); return; }
+  if (!n || n < 1) { showToast('Inserisci il n\u00B0 camion', '#ff6b35'); return; }
+  const desc = '🚛 ' + mat + ' \u00B7 ' + n + ' camion';
+  showSaving();
+  const record = { data, descrizione: desc, created_by: currentUser?.id || null };
+  const { data: inserted, error } = await sb.from('task_pianificati').insert(record).select().single();
+  if (error) { showToast('Errore: '+error.message, '#ff6b35'); return; }
+  taskData.push(inserted);
+  document.getElementById('viaggioCamion').value = '';
+  showToast('\u2713 Viaggio pianificato');
+  renderPianifica();
+  updateDafareBadge();
 }
 
 async function salvaTask() {
