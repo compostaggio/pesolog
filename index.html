@@ -476,6 +476,17 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
     </div>
 
     <div class="settings-section">
+      <div class="settings-title">Backup dati completo</div>
+      <div style="font-size:11px;color:var(--text-dim);line-height:1.7;margin-bottom:10px;">
+        Scarica un file JSON con TUTTI i dati di tutte le tabelle (report, conferimenti, analisi, contaore, biometano, viaggi/task, impostazioni). Da conservare in un posto sicuro.
+      </div>
+      <button class="export-btn" onclick="exportBackupCompleto()" style="margin-top:0;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Scarica backup completo (JSON)
+      </button>
+    </div>
+
+    <div class="settings-section">
       <div class="settings-title">Importa dati storici</div>
       <div style="font-size:11px;color:var(--text-dim);line-height:1.7;margin-bottom:10px;">
         Importa un file JSON con report esistenti (es. backup dalla versione precedente).
@@ -2066,6 +2077,42 @@ function buildFlatRows() {
     });
   });
   return rows;
+}
+
+// rev7.10: backup completo di tutte le 8 tabelle in un unico file JSON (solo admin)
+async function exportBackupCompleto() {
+  if (!isAdmin) { showToast('Solo l\'admin pu\u00F2 scaricare il backup', '#ff6b35'); return; }
+  showSaving();
+  try {
+    const [rep, conf, dep, imp, ana, cont, gas, task] = await Promise.all([
+      sb.from('reports').select('*'),
+      sb.from('conferimenti').select('*'),
+      sb.from('dep_iniziale').select('*'),
+      sb.from('impostazioni').select('*'),
+      sb.from('analisi').select('*'),
+      sb.from('contaore').select('*'),
+      sb.from('produzione_gas').select('*'),
+      sb.from('task_pianificati').select('*')
+    ]);
+    const err = [rep,conf,dep,imp,ana,cont,gas,task].find(x => x && x.error);
+    if (err) { showToast('Errore backup: ' + err.error.message, '#ff6b35'); return; }
+    const backup = {
+      app: 'PesoLog', tipo: 'backup-completo', versione: 1, data: new Date().toISOString(),
+      tabelle: {
+        reports: rep.data || [], conferimenti: conf.data || [], dep_iniziale: dep.data || [],
+        impostazioni: imp.data || [], analisi: ana.data || [], contaore: cont.data || [],
+        produzione_gas: gas.data || [], task_pianificati: task.data || []
+      }
+    };
+    const conteggi = Object.entries(backup.tabelle).map(e => e[0] + ':' + e[1].length).join(' \u00B7 ');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'}));
+    a.download = 'pesolog_backup_completo_' + new Date().toISOString().split('T')[0] + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    showToast('\u2713 Backup scaricato (' + conteggi + ')');
+  } catch(e) {
+    showToast('Errore backup: ' + (e.message||e), '#ff6b35');
+  }
 }
 
 function exportCSV() {
