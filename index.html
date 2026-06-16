@@ -2079,6 +2079,7 @@ function buildNoteRiepPrintHTML() {
 }
 
 function fmtNm3(n){ return Math.round(n||0).toLocaleString('it-IT') + ' Nm³'; }
+function fmtNmH(n){ return (Math.round((n||0)*10)/10).toLocaleString('it-IT') + ' Nm³/h'; }
 
 function biometanoPeriodo(){
   const da=document.getElementById('filterDa')?.value||'';
@@ -2097,25 +2098,34 @@ function biometanoPeriodo(){
     righe.push({data:seq[i].data,ora:seq[i].ora||'',cumulato:seq[i].gas_rete,delta});
   }
   const netto=righe.reduce((s,x)=>s+(x.delta!=null?x.delta:0),0);
-  return {netto,righe};
+  let mediaOraria=null, ore=null, primo=null, ultimo=null;
+  if(righe.length>=2){
+    primo=righe[0]; ultimo=righe[righe.length-1];
+    const t1=new Date(primo.data+'T'+(primo.ora||'00:00')+':00');
+    const t2=new Date(ultimo.data+'T'+(ultimo.ora||'00:00')+':00');
+    ore=(t2-t1)/3600000;
+    if(ore>0 && primo.cumulato!=null && ultimo.cumulato!=null) mediaOraria=(ultimo.cumulato-primo.cumulato)/ore;
+  }
+  return {netto,righe,mediaOraria,ore,primo,ultimo};
 }
 
 function renderRiepBiometano(){
   const card=document.getElementById('riepBiometanoCard');
   const box=document.getElementById('riepBiometanoBox');
   if(!card||!box) return;
-  const {netto,righe}=biometanoPeriodo();
+  const {netto,righe,mediaOraria,primo,ultimo}=biometanoPeriodo();
   if(!righe.length){card.style.display='none';box.innerHTML='';return;}
   card.style.display='';
+  const mediaHtml=(mediaOraria!=null)?'<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:12px;text-align:center;margin-bottom:10px;"><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Media oraria (dal primo all’ultimo inserimento)</div><div style="font-size:18px;font-weight:800;color:var(--accent3);">'+fmtNmH(mediaOraria)+'</div><div style="font-size:10px;color:var(--text-muted);margin-top:3px;">'+fmtData(primo.data)+(primo.ora?' '+primo.ora:'')+' → '+fmtData(ultimo.data)+(ultimo.ora?' '+ultimo.ora:'')+'</div></div>':'';
   const rowsHtml=righe.map(r=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);"><span style="font-size:12px;color:var(--text-dim);">'+fmtData(r.data)+(r.ora?' · '+r.ora:'')+'</span><span style="font-size:13px;color:var(--accent);font-weight:600;">'+(r.delta!=null?'+'+fmtNm3(r.delta):'—')+'</span></div>').join('');
-  box.innerHTML='<div style="background:var(--surface2);border:1px solid var(--accent);border-radius:var(--rs);padding:14px;text-align:center;margin-bottom:10px;"><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Biometano immesso nel periodo</div><div style="font-size:22px;font-weight:800;color:var(--accent);">'+fmtNm3(netto)+'</div></div>'+rowsHtml;
+  box.innerHTML='<div style="background:var(--surface2);border:1px solid var(--accent);border-radius:var(--rs);padding:14px;text-align:center;margin-bottom:10px;"><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Biometano immesso nel periodo</div><div style="font-size:22px;font-weight:800;color:var(--accent);">'+fmtNm3(netto)+'</div></div>'+mediaHtml+rowsHtml;
 }
 
 function buildBiometanoPrintHTML(){
-  const {netto,righe}=biometanoPeriodo();
+  const {netto,righe,mediaOraria}=biometanoPeriodo();
   if(!righe.length) return '';
   const rows=righe.map(r=>'<tr><td style="padding:8px;border:1px solid #ddd;white-space:nowrap;">'+new Date(r.data+'T12:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'})+(r.ora?' '+r.ora:'')+'</td><td style="padding:8px;border:1px solid #ddd;text-align:right;">'+fmtNm3(r.cumulato)+'</td><td style="padding:8px;border:1px solid #ddd;text-align:right;font-weight:600;">'+(r.delta!=null?'+'+fmtNm3(r.delta):'—')+'</td></tr>').join('');
-  return '<h3 style="font-size:13px;text-transform:uppercase;letter-spacing:1px;margin:24px 0 8px;color:#333;">Biometano in rete</h3><div style="font-size:13px;margin-bottom:8px;">Biometano netto immesso nel periodo: <strong>'+fmtNm3(netto)+'</strong></div><table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr style="background:#f0f0f0;"><th style="text-align:left;padding:8px;border:1px solid #ddd;">Data lettura</th><th style="text-align:right;padding:8px;border:1px solid #ddd;">Lettura cumulata</th><th style="text-align:right;padding:8px;border:1px solid #ddd;">Prodotto</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  return '<h3 style="font-size:13px;text-transform:uppercase;letter-spacing:1px;margin:24px 0 8px;color:#333;">Biometano in rete</h3><div style="font-size:13px;margin-bottom:8px;">Biometano netto immesso nel periodo: <strong>'+fmtNm3(netto)+'</strong></div>'+(mediaOraria!=null?'<div style="font-size:13px;margin-bottom:8px;">Media oraria (dal primo all’ultimo inserimento): <strong>'+fmtNmH(mediaOraria)+'</strong></div>':'')+'<table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr style="background:#f0f0f0;"><th style="text-align:left;padding:8px;border:1px solid #ddd;">Data lettura</th><th style="text-align:right;padding:8px;border:1px solid #ddd;">Lettura cumulata</th><th style="text-align:right;padding:8px;border:1px solid #ddd;">Prodotto</th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
 
 function renderRiepilogo() {
