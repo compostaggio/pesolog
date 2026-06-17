@@ -279,9 +279,14 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
 }
 
 @media print{
-  body{background:#fff!important;color:#000!important;padding:0!important;}
+  html,body{height:auto!important;min-height:0!important;overflow:visible!important;}
+  body{background:#fff!important;color:#000!important;padding:0!important;padding-bottom:0!important;}
   .nav,.hdr,.overlay,.page{display:none!important;}
   #printArea{display:block!important;font-family:Arial,sans-serif;padding:20px;}
+  #printArea table{page-break-inside:auto;}
+  #printArea tr{page-break-inside:avoid;}
+  #printArea thead{display:table-header-group;}
+  #printArea h3{page-break-after:avoid;}
 }
 #printArea{display:none;}
 </style>
@@ -2119,6 +2124,19 @@ function renderRiepBiometano(){
   const mediaHtml=(mediaOraria!=null)?'<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:12px;text-align:center;margin-bottom:10px;"><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Media oraria (dal primo all’ultimo inserimento)</div><div style="font-size:18px;font-weight:800;color:var(--accent3);">'+fmtNmH(mediaOraria)+'</div><div style="font-size:10px;color:var(--text-muted);margin-top:3px;">'+fmtData(primo.data)+(primo.ora?' '+primo.ora:'')+' → '+fmtData(ultimo.data)+(ultimo.ora?' '+ultimo.ora:'')+'</div></div>':'';
   const rowsHtml=righe.map(r=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);"><span style="font-size:12px;color:var(--text-dim);">'+fmtData(r.data)+(r.ora?' · '+r.ora:'')+'</span><span style="font-size:13px;color:var(--accent);font-weight:600;">'+(r.delta!=null?'+'+fmtNm3(r.delta):'—')+'</span></div>').join('');
   box.innerHTML='<div style="background:var(--surface2);border:1px solid var(--accent);border-radius:var(--rs);padding:14px;text-align:center;margin-bottom:10px;"><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Biometano immesso nel periodo</div><div style="font-size:22px;font-weight:800;color:var(--accent);">'+fmtNm3(netto)+'</div></div>'+mediaHtml+rowsHtml;
+}
+
+function buildConferitoPrintHTML(da,a){
+  const list=(conferimenti||[]).filter(x=>(!da||x.al>=da)&&(!a||x.dal<=a));
+  if(!list.length) return '';
+  const sorted=[...list].sort((p,q)=>(p.dal||'').localeCompare(q.dal||''));
+  let tot=0;
+  const rows=sorted.map(x=>{
+    const quota=quotaConferimento(x,da,a);
+    tot+=quota;
+    return '<tr><td style="padding:8px;border:1px solid #ddd;white-space:nowrap;">'+fmtDataShort(x.dal)+' → '+fmtDataShort(x.al)+'</td><td style="padding:8px;border:1px solid #ddd;text-align:right;">'+fmtPeso(x.qta)+'</td><td style="padding:8px;border:1px solid #ddd;text-align:right;font-weight:600;">'+fmtPeso(quota)+'</td></tr>';
+  }).join('');
+  return '<h3 style="font-size:13px;text-transform:uppercase;letter-spacing:1px;margin:24px 0 8px;color:#333;">Materiale conferito (organico)</h3><div style="font-size:13px;margin-bottom:8px;">Totale conferito nel periodo: <strong>'+fmtPeso(tot)+'</strong></div><table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr style="background:#f0f0f0;"><th style="text-align:left;padding:8px;border:1px solid #ddd;">Periodo conferimento</th><th style="text-align:right;padding:8px;border:1px solid #ddd;">Quantità totale</th><th style="text-align:right;padding:8px;border:1px solid #ddd;">Di cui nel periodo</th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
 
 function buildBiometanoPrintHTML(){
@@ -5000,6 +5018,7 @@ function stampaPDF(){
   const camRows=sortedCam.length?sortedCam.map(([n,v])=>`<tr><td>${n}</td><td style="text-align:right;">${fmtPeso(v.kg)}</td><td style="text-align:right;font-weight:600;">${v.n} cam</td></tr>`).join(''):'<tr><td colspan="3" style="color:#aaa;font-style:italic;">Nessun carico camion</td></tr>';
   const ammRow=totAmm>0?`<tr style="border-top:2px solid #000;"><td><strong>Ammendante prodotto</strong></td><td style="text-align:right;font-weight:600;">${fmtPeso(totAmm)}</td></tr>`:'';
   document.getElementById('printArea').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;border-bottom:2px solid #000;padding-bottom:12px;"><div><div style="font-size:22px;font-weight:800;letter-spacing:-1px;">PESO<span style="color:#666">LOG</span></div><div style="font-size:13px;color:#666;margin-top:2px;">Report riepilogativo</div></div><div style="text-align:right;font-size:12px;color:#666;"><div><strong>Periodo:</strong> ${periodoStr}</div><div>Stampato: ${now}</div><div>Report inclusi: ${f.length}</div></div></div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;"><div style="border:1px solid #ddd;border-radius:8px;padding:12px;"><div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px;">Peso totale</div><div style="font-size:20px;font-weight:800;margin-top:4px;">${fmtPeso(totPeso)}</div></div><div style="border:1px solid #ddd;border-radius:8px;padding:12px;"><div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px;">Camion caricati</div><div style="font-size:20px;font-weight:800;margin-top:4px;">${totCamion}</div></div><div style="border:1px solid #ddd;border-radius:8px;padding:12px;"><div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px;">Ammendante</div><div style="font-size:20px;font-weight:800;margin-top:4px;">${fmtPeso(totAmm)}</div></div></div><h3 style="font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;color:#333;">Per tipo di materiale</h3><table style="width:100%;border-collapse:collapse;margin-bottom:24px;font-size:13px;"><thead><tr style="background:#f0f0f0;"><th style="text-align:left;padding:8px;border:1px solid #ddd;">Materiale</th><th style="text-align:right;padding:8px;border:1px solid #ddd;">Peso</th></tr></thead><tbody style="border:1px solid #ddd;">${matRows}${ammRow}</tbody></table><h3 style="font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;color:#333;">Carico camion per tipologia</h3><table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr style="background:#f0f0f0;"><th style="text-align:left;padding:8px;border:1px solid #ddd;">Tipo carico</th><th style="text-align:right;padding:8px;border:1px solid #ddd;">Peso</th><th style="text-align:right;padding:8px;border:1px solid #ddd;">N° camion</th></tr></thead><tbody style="border:1px solid #ddd;">${camRows}</tbody></table>`;
+  document.getElementById('printArea').innerHTML += buildConferitoPrintHTML(da,a);
   document.getElementById('printArea').innerHTML += buildBiometanoPrintHTML();
   document.getElementById('printArea').innerHTML += buildNoteRiepPrintHTML();
   window.print();
