@@ -489,6 +489,15 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Scarica backup completo (JSON)
       </button>
+      <div style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:14px 0 8px;">Oppure scarica i dati in formato leggibile da aprire:</div>
+      <button class="xls-btn" onclick="exportBackupExcel()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Scarica Excel completo (tutti i fogli)
+      </button>
+      <button class="export-btn" onclick="exportNoteWord()" style="margin-top:8px;border-color:#1565c0;color:#1565c0;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+        Scarica note diario (Word)
+      </button>
     </div>
 
     <div class="settings-section">
@@ -2334,6 +2343,81 @@ async function exportBackupCompleto() {
   } catch(e) {
     showToast('Errore backup: ' + (e.message||e), '#ff6b35');
   }
+}
+
+// rev7.16: export leggibile — Excel multi-foglio con tutti i dati
+function exportBackupExcel(){
+  if(!isAdmin){ showToast('Solo l\'admin può esportare', '#ff6b35'); return; }
+  if(typeof XLSX==='undefined'){ showToast('Libreria Excel non disponibile', '#ff6b35'); return; }
+  const wb=XLSX.utils.book_new();
+  const add=(name,aoa,cols)=>{ const ws=XLSX.utils.aoa_to_sheet(aoa); if(cols) ws['!cols']=cols; XLSX.utils.book_append_sheet(wb,ws,name); };
+
+  // Lavorazioni (report dettagliati)
+  const hLav=['Data','Operatori','Turno','Tipo','Materiale/Carico','Da','A','Peso kg','N° Camion','Box Ammendante','Qty Ammendante kg','Totale kg','Note (Attività/Problemi)'];
+  add('Lavorazioni',[hLav,...buildFlatRows()],[{wch:12},{wch:18},{wch:10},{wch:12},{wch:20},{wch:14},{wch:14},{wch:10},{wch:10},{wch:14},{wch:16},{wch:12},{wch:30}]);
+
+  // Riepilogo materiali
+  const matMap={}; reports.forEach(r=>(r.materiali||[]).forEach(m=>{ matMap[m.nome]=(matMap[m.nome]||0)+m.peso; }));
+  add('Riepilogo materiali',[['Materiale','Peso totale kg','Peso totale t'],...Object.entries(matMap).sort((a,b)=>b[1]-a[1]).map(e=>[e[0],Math.round(e[1]),(e[1]/1000).toFixed(2)])]);
+
+  // Conferimenti
+  add('Conferimenti',[['Dal','Al','Quantità kg'],...conferimenti.map(c=>[c.dal,c.al,c.qta])]);
+
+  // Depositi
+  let depAtt={}; try{ depAtt=calcDepositi(reports,conferimenti)||{}; }catch(e){}
+  add('Depositi',[['Tipo','Deposito iniziale kg','Deposito attuale kg'],
+    ['Sovvallo',(depIniziale&&depIniziale.sovvallo)||0,Math.round(depAtt.sovvallo||0)],
+    ['Inoculo',(depIniziale&&depIniziale.inoculo)||0,Math.round(depAtt.inoculo||0)],
+    ['Organico',(depIniziale&&depIniziale.organico)||0,Math.round(depAtt.organico||0)],
+    [],
+    ['Data deposito iniziale',(depIniziale&&depIniziale.data)||'']]);
+
+  // Biometano in rete
+  const gas=[...produzioneGasData].filter(r=>r.gas_rete!=null).sort((a,b)=>new Date(a.data+'T'+(a.ora||'00:00')+':00')-new Date(b.data+'T'+(b.ora||'00:00')+':00'));
+  add('Biometano in rete',[['Data','Ora','Lettura cumulata Nm³','Prodotto dal prec. Nm³'],
+    ...gas.map((r,i)=>{ const prev=gas[i-1]; return [r.data,r.ora||'',r.gas_rete,prev?Math.round(r.gas_rete-prev.gas_rete):'']; })]);
+
+  // Analisi biogas
+  add('Analisi biogas',[['Data','Punto','CH4 %','CO2 %','H2S ppm','H2 %','O2 %','Portata Nm³/h','Biogas prod Nm³/h','Note'],
+    ...analisiData.filter(a=>a.tipo==='biogas').map(a=>{ const v=a.valori||{}; return [a.data,a.cisterna||'',v.ch4??'',v.co2??'',v.h2s??'',v.h2??'',v.o2??'',v.portata??'',v.biogas_prodotto??'',a.note||'']; })]);
+  // Analisi percolato
+  add('Analisi percolato',[['Data','Punto','pH','Conducibilità mS','Temperatura °C','TAC','Tampone','NH4','Note'],
+    ...analisiData.filter(a=>a.tipo==='percolato').map(a=>{ const v=a.valori||{}; return [a.data,a.cisterna||'',v.ph??'',v.conducibilita??'',v.temperatura??'',v.tac??'',v.tampone??'',v.azoto_ammoniacale??'',a.note||'']; })]);
+  // Analisi merceologica
+  add('Analisi merceologica',[['Data','Digeribile kg','Dig %','Non dig kg','Non dig %','Legno kg','Legno %','Note'],
+    ...analisiData.filter(a=>a.tipo==='merceologica').map(a=>{ const v=a.valori||{}; return [a.data,v.digeribile_kg??'',v.digeribile_perc??'',v.nondigeribile_kg??'',v.nondigeribile_perc??'',v.legno_kg??'',v.legno_perc??'',a.note||'']; })]);
+
+  // Contaore
+  add('Contaore',[['Macchina','Data','Contaore h','Note'],
+    ...[...contaoreData].sort((a,b)=>(a.macchina||'').localeCompare(b.macchina||'')||(a.data||'').localeCompare(b.data||'')).map(r=>[r.macchina||'',r.data,r.ore,r.note||''])]);
+
+  // Viaggi e task
+  add('Viaggi e task',[['Data','Tipo','Descrizione','Completato','Completato da','Completato il'],
+    ...[...taskData].sort((a,b)=>(a.data||'').localeCompare(b.data||'')).map(t=>[t.data,(typeof isViaggioTask==='function'&&isViaggioTask(t))?'Viaggio':'Task',t.descrizione||'',t.completato?'Sì':'No',t.completato_da||'',t.completato_at?new Date(t.completato_at).toLocaleString('it-IT'):''])]);
+
+  // Note diario
+  add('Note diario',[['Data','Nota'],...[...noteDiario].sort((a,b)=>(a.data||'').localeCompare(b.data||'')).map(n=>[n.data,n.testo||''])]);
+
+  XLSX.writeFile(wb,'pesolog_dati_completi_'+new Date().toISOString().split('T')[0]+'.xlsx');
+  showToast('✓ Excel completo scaricato');
+}
+
+// rev7.16: export note diario in formato Word (.doc apribile da Word)
+function exportNoteWord(){
+  if(!isAdmin){ showToast('Solo l\'admin può esportare', '#ff6b35'); return; }
+  const note=[...noteDiario].sort((a,b)=>(a.data||'').localeCompare(b.data||''));
+  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  const oggi=new Date().toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'});
+  let body;
+  if(!note.length){ body='<p>Nessuna nota presente.</p>'; }
+  else { body=note.map(n=>'<h3 style="color:#2e7d32;margin:14px 0 4px;">'+new Date((n.data||'')+'T12:00:00').toLocaleDateString('it-IT',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})+'</h3><p style="margin:0 0 8px;font-size:13px;">'+esc(n.testo)+'</p>').join(''); }
+  const doc='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>Diario PesoLog</title></head><body style="font-family:Calibri,Arial,sans-serif;">'+
+    '<h1 style="color:#2e7d32;">Diario impianto — PesoLog</h1><p style="color:#666;">Esportato il '+oggi+' · '+note.length+' note</p><hr>'+body+'</body></html>';
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([doc],{type:'application/msword'}));
+  a.download='pesolog_note_diario_'+new Date().toISOString().split('T')[0]+'.doc';
+  document.body.appendChild(a); a.click(); a.remove();
+  showToast('✓ Note (Word) scaricate');
 }
 
 function exportCSV() {
