@@ -394,6 +394,10 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
 #page-ronde header.app, #page-ronde nav.tabs, #page-ronde .fab-bar, #page-ronde .toolbar-card, #page-ronde .ronda-picker{display:none}
 #page-ronde{background:#fff}
 }
+/* override integrazione */
+#page-ronde{padding-bottom:150px;}
+#page-ronde .fab-bar{z-index:45;}
+
 </style>
 </head>
 <body>
@@ -1521,6 +1525,12 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
 </section>
 
 </main>
+
+<div class="fab-bar" id="fabCompila">
+  <button class="btn-secondary" id="resetForm" type="button">Pulisci</button>
+  <button class="btn-secondary" id="scaricaPdf" type="button">Scarica PDF</button>
+  <button class="btn-orange" id="inviaPdf" type="button">Invia</button>
+</div>
 </div>
 
 <nav class="nav">
@@ -1975,7 +1985,9 @@ function showPage(name, btn) {
   if(name==='dafare')    { renderDafare(); }
   if(name==='pianifica') { renderPianifica(); }
   if(name==='diario')    renderDiario();
-  if(name==='ronde')     { if(window.initRonde) window.initRonde(); }
+  if(name==='ronde')     { if(window.initRonde) window.initRonde();
+                           var _n=document.querySelector('.nav'),_f=document.getElementById('fabCompila');
+                           if(_n&&_f) _f.style.bottom=_n.offsetHeight+'px'; }
 }
 
 // ── CHIPS ─────────────────────────────────────────────────────────────
@@ -6356,7 +6368,7 @@ function init(){
   setupSignature();
   const d = loadDraft(rondaCorrente); if(d) writeForm(d);
 }
-window.initRonde=function(){if(!window.__rondeInited){window.__rondeInited=true;init();}else{try{resize();}catch(e){}}};
+window.initRonde=function(){try{if(!window.__rondeInited){init();window.__rondeInited=true;}else{resize();}}catch(e){console.error('initRonde error',e);}};
 
 })();
 </script>
