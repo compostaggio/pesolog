@@ -549,7 +549,16 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
       </div>
     </div>
 
-    <div class="settings-section">
+        <div class="settings-section">
+      <div class="settings-title">Obiettivo conferimento annuo</div>
+      <div style="font-size:11px;color:var(--text-dim);line-height:1.7;margin-bottom:10px;">Totale organico da conferire nell'anno (in tonnellate). Usato per la previsione nella scheda Scenari.</div>
+      <div style="display:grid;grid-template-columns:1fr 80px;gap:8px;">
+        <div><label>Obiettivo (ton)</label><input type="number" id="obiettivoAnnuoInput" placeholder="58000" min="0" inputmode="numeric" style="margin-bottom:0;"></div>
+        <div style="display:flex;align-items:flex-end;"><button class="settings-add-btn" onclick="salvaObiettivoAnnuo()" style="width:100%;height:44px;">✓</button></div>
+      </div>
+    </div>
+
+<div class="settings-section">
       <div class="settings-title">Soglie alert analisi</div>
       <div style="font-size:11px;color:var(--text-dim);line-height:1.7;margin-bottom:10px;">
         Imposta i valori min/max per ogni parametro. Se un'analisi è fuori range, appare un avviso nella sezione Andamento.
@@ -852,12 +861,22 @@ textarea{resize:vertical;min-height:72px;margin-bottom:0;}
     </div>
   </div>
   <div class="card"><div class="card-title">📦 Depositi correnti</div><div id="depositiList"></div></div>
+    <div class="card">
+    <div class="card-title">🔮 Deposito ipotetico ad oggi</div>
+    <div id="depIpoteticoBox"></div>
+    <div style="height:240px;margin-top:12px;"><canvas id="depTrendChart"></canvas></div>
+  </div>
   <button class="submit-btn" onclick="exportDepositiExcel()" style="margin-top:12px;width:100%;">📥 Scarica Excel depositi</button>
 </div>
 
 <!-- PAGE: SCENARI -->
 <div id="page-scenari" class="page">
   <div class="slabel">Scenari & Previsioni</div>
+  <div class="card">
+    <div class="card-title">📈 Previsione conferimento annuo</div>
+    <div id="confAnnuoBox"></div>
+  </div>
+
   <div class="card">
     <div class="card-title">🔮 Previsione smaltimento</div>
     <div style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Due periodi separati: uno per il lavorato, uno per il conferito</div>
@@ -1978,8 +1997,8 @@ function showPage(name, btn) {
   if(name==='riepilogo') renderRiepilogo();
   if(name==='storico')   { renderStorico(); markProblemiSeen(); }
   if(name==='grafici')   renderGrafici();
-  if(name==='depositi')  renderDepositi();
-  if(name==='scenari')   { renderPrevisione(); renderObiettivoSuggestion(); renderSimulatore(); initMultiFase(); renderMultiFase(); }
+  if(name==='depositi')  { renderDepositi(); renderDepIpotetico(); }
+  if(name==='scenari')   { renderPrevisione(); renderObiettivoSuggestion(); renderSimulatore(); initMultiFase(); renderMultiFase(); renderConferimentoAnnuo(); }
   if(name==='andamento') { renderAndamento(); }
   if(name==='registro')  { renderRegistroImpianto(); }
   if(name==='dafare')    { renderDafare(); }
@@ -2685,6 +2704,7 @@ function openSettings() {
   ['Operatori','Materiali','Box','Luoghi','Macchine'].forEach(k=>renderSettingsList(k.toLowerCase(),'settings'+k));
   renderEmailList();
   renderSoglieForm();
+  var _oi=document.getElementById('obiettivoAnnuoInput'); if(_oi) _oi.value=getObiettivoAnnuoTon();
   document.getElementById('settingsOverlay').classList.add('open');
 }
 
@@ -3191,6 +3211,7 @@ async function salvaSoglie() {
       max: maxVal !== '' && maxVal != null ? parseFloat(maxVal) : null
     };
   });
+  if(settings.soglie&&settings.soglie.obiettivoAnnuoTon!=null) soglie.obiettivoAnnuoTon=settings.soglie.obiettivoAnnuoTon;
   settings.soglie = soglie;
   try { await dbSaveSettings(); showToast('✓ Soglie salvate'); } catch(e) { showToast('⚠ Errore','#ff6b35'); }
 }
@@ -5426,6 +5447,109 @@ function fmtK(n){return n>=1000?(n/1000).toFixed(1).replace('.',',')+'k':String(
 function fmtPeso(n){return n>=1000?(n/1000).toFixed(2).replace('.',',')+' t':Math.round(n)+' kg';}
 function fmtData(d){return new Date(d+'T12:00:00').toLocaleDateString('it-IT',{weekday:'short',day:'numeric',month:'short',year:'numeric'});}
 function fmtDataShort(d){return new Date(d+'T12:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'2-digit'});}
+
+/* ===== PREVISIONI DEPOSITI (aggiunta) ===== */
+let depTrendChartInstance=null;
+function getObiettivoAnnuoTon(){ var v=(settings&&settings.soglie)?parseFloat(settings.soglie.obiettivoAnnuoTon):NaN; return (isFinite(v)&&v>0)?v:58000; }
+function fmtTon(kg){ return (kg/1000).toLocaleString('it-IT',{minimumFractionDigits:1,maximumFractionDigits:1})+' t'; }
+function _prevAddDays(iso,n){ var d=new Date(iso+'T12:00:00'); d.setDate(d.getDate()+n); return d.toLocaleDateString('sv'); }
+function _prevDays(a,b){ return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/86400000); }
+
+function serieDepIpotetica(aData){
+  if(!depIniziale||!depIniziale.data) return null;
+  var start=depIniziale.data, end=aData||todayISO();
+  if(_prevDays(start,end)<0) return null;
+  var N=_prevDays(start,end);
+  function z(){return new Array(N+1).fill(0);}
+  var conf=z(),orgLav=z(),sProd=z(),sFossa=z(),sCam=z(),vagl=z(),iRiut=z();
+  var idx=function(iso){return _prevDays(start,iso);};
+  conferimenti.filter(function(x){return x.dal>start;}).forEach(function(x){var i=idx(x.dal); if(i>=0&&i<=N) conf[i]+=(x.qta||0);});
+  reports.filter(function(r){return r.data>start&&r.data<=end;}).forEach(function(r){
+    var i=idx(r.data); if(i<0||i>N) return;
+    (r.materiali||[]).forEach(function(m){
+      var nl=(m.nome||'').toLowerCase(),da=(m.da||'').trim(),a=(m.a||'').trim(),daL=da.toLowerCase(),p=m.peso||0;
+      if(nl.includes('sovvallo')){ if(daL.includes('50x50')) sFossa[i]+=p; else sProd[i]+=p; }
+      else if(nl.includes('vagliatura')) vagl[i]+=p;
+      else if(nl.includes('inoculo')&&a) iRiut[i]+=p;
+      else if(nl.includes('organico')&&!da) orgLav[i]+=p;
+    });
+    ((r.camion&&r.camion.carichi)||[]).forEach(function(c){ if((c.nome||'').toLowerCase().includes('sovvallo')) sCam[i]+=(c.peso||0); });
+  });
+  var dates=[],org=[],sov=[],ino=[],cConf=0,cOrgLav=0,cSProd=0,cSFossa=0,cSCam=0,cVagl=0,cIRiut=0;
+  for(var i=0;i<=N;i++){
+    cConf+=conf[i];cOrgLav+=orgLav[i];cSProd+=sProd[i];cSFossa+=sFossa[i];cSCam+=sCam[i];cVagl+=vagl[i];cIRiut+=iRiut[i];
+    dates.push(_prevAddDays(start,i));
+    org.push(Math.max(0,depIniziale.organico+cConf-cOrgLav));
+    sov.push(Math.max(0,depIniziale.sovvallo+cSProd-cSFossa-cSCam));
+    ino.push(Math.max(0,depIniziale.inoculo+Math.max(0,cVagl-cSProd)-cIRiut));
+  }
+  return {dates:dates,organico:org,sovvallo:sov,inoculo:ino,oggi:{organico:org[N],sovvallo:sov[N],inoculo:ino[N],data:dates[N]}};
+}
+
+function renderDepIpotetico(){
+  var box=document.getElementById('depIpoteticoBox'); if(!box) return;
+  var s=serieDepIpotetica(null);
+  if(!s){ box.innerHTML='<div style="font-size:12px;color:var(--text-dim);padding:8px 0;">Imposta un deposito iniziale (con data) per vedere il deposito ipotetico ad oggi.</div>'; if(depTrendChartInstance){depTrendChartInstance.destroy();depTrendChartInstance=null;} return; }
+  var o=s.oggi;
+  box.innerHTML='<div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Stima al '+fmtData(o.data)+', dal deposito iniziale del '+fmtData(depIniziale.data)+' + conferimenti − lavorazioni.</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">'
+    +'<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:10px;text-align:center;"><div style="font-size:11px;color:var(--text-dim);">Organico</div><div style="font-size:16px;font-weight:700;color:var(--accent);">'+fmtTon(o.organico)+'</div></div>'
+    +'<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:10px;text-align:center;"><div style="font-size:11px;color:var(--text-dim);">Sovvallo</div><div style="font-size:16px;font-weight:700;color:var(--accent3);">'+fmtTon(o.sovvallo)+'</div></div>'
+    +'<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:10px;text-align:center;"><div style="font-size:11px;color:var(--text-dim);">Inoculo</div><div style="font-size:16px;font-weight:700;color:var(--accent2);">'+fmtTon(o.inoculo)+'</div></div>'
+    +'</div>';
+  var ctx=document.getElementById('depTrendChart'); if(!ctx||typeof Chart==='undefined') return;
+  if(depTrendChartInstance){depTrendChartInstance.destroy();}
+  var mk=function(label,data,color){return {label:label,data:data.map(function(v){return v/1000;}),borderColor:color,backgroundColor:color,tension:0.2,pointRadius:0,borderWidth:2};};
+  depTrendChartInstance=new Chart(ctx,{type:'line',
+    data:{labels:s.dates.map(fmtDataShort),datasets:[mk('Organico',s.organico,'#2f7d31'),mk('Sovvallo',s.sovvallo,'#e08a1e'),mk('Inoculo',s.inoculo,'#8a5cc7')]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{boxWidth:12,font:{size:11}}},tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+c.parsed.y.toFixed(1)+' t';}}}},scales:{y:{title:{display:true,text:'t'},beginAtZero:true},x:{ticks:{maxTicksLimit:10,font:{size:10}}}}}
+  });
+}
+
+function calcConferimentoAnnuo(aData){
+  var end=aData||todayISO();
+  var year=new Date(end+'T12:00:00').getFullYear();
+  var jan1=year+'-01-01';
+  var targetTon=getObiettivoAnnuoTon(), targetKg=targetTon*1000;
+  var weeklyTargetKg=targetKg/52;
+  var settTrascorse=Math.max(0.2,(_prevDays(jan1,end)+1)/7);
+  var settRimaste=Math.max(0.2,52-settTrascorse);
+  var conferitoYTD=conferimenti.reduce(function(s,x){return s+quotaConferimento(x,jan1,end);},0);
+  var mediaSettYTD=conferitoYTD/settTrascorse;
+  var proiezione=mediaSettYTD*52;
+  var necessarioPerSett=(targetKg-conferitoYTD)/settRimaste;
+  return {year:year,targetKg:targetKg,weeklyTargetKg:weeklyTargetKg,settTrascorse:settTrascorse,settRimaste:settRimaste,conferitoYTD:conferitoYTD,mediaSettYTD:mediaSettYTD,proiezione:proiezione,scostamento:proiezione-targetKg,necessarioPerSett:necessarioPerSett};
+}
+
+function renderConferimentoAnnuo(){
+  var box=document.getElementById('confAnnuoBox'); if(!box) return;
+  var b=calcConferimentoAnnuo(null);
+  var sotto=b.scostamento<0;
+  var colProi=sotto?'var(--accent2)':'var(--success)';
+  var row=function(l,v,c){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);"><span style="font-size:12px;color:var(--text-dim);">'+l+'</span><span style="font-size:13px;font-weight:600;'+(c?('color:'+c+';'):'')+'">'+v+'</span></div>';};
+  box.innerHTML=
+     row('Obiettivo annuo '+b.year,fmtTon(b.targetKg))
+    +row('Target settimanale (÷52)',fmtTon(b.weeklyTargetKg))
+    +row('Conferito da inizio anno',fmtTon(b.conferitoYTD)+' <span style="color:var(--text-dim);font-weight:400;">('+b.settTrascorse.toFixed(1)+' sett)</span>')
+    +row('Media attuale a settimana',fmtTon(b.mediaSettYTD))
+    +row('Proiezione a fine anno',fmtTon(b.proiezione),colProi)
+    +row('Scostamento vs obiettivo',(b.scostamento>=0?'+':'')+fmtTon(b.scostamento),colProi)
+    +'<div style="margin-top:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:10px;">'
+    +'<div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;">Per centrare l&#39;obiettivo da adesso ('+b.settRimaste.toFixed(1)+' sett rimaste):</div>'
+    +'<div style="font-size:18px;font-weight:700;color:var(--accent);">'+fmtTon(b.necessarioPerSett)+' <span style="font-size:12px;font-weight:400;color:var(--text-dim);">a settimana</span></div>'
+    +'</div>'
+    +'<div style="font-size:10px;color:var(--text-dim);margin-top:8px;">Obiettivo modificabile in Impostazioni.</div>';
+}
+
+function salvaObiettivoAnnuo(){
+  var inp=document.getElementById('obiettivoAnnuoInput'); if(!inp) return;
+  var v=parseFloat(inp.value);
+  if(!isFinite(v)||v<=0){ showToast('⚠ Inserisci un valore valido','#ff6b35'); return; }
+  settings.soglie=settings.soglie||{}; settings.soglie.obiettivoAnnuoTon=v;
+  (async function(){ try{ await dbSaveSettings(); showToast('✓ Obiettivo annuo salvato'); }catch(e){ showToast('⚠ Errore salvataggio','#ff6b35'); } })();
+}
+/* ===== FINE PREVISIONI DEPOSITI ===== */
+
 </script>
 <script>
 /* ===== RONDE (logica integrata, IIFE isolata) ===== */
